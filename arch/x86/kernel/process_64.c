@@ -133,10 +133,15 @@ void cpu_idle(void)
 			__exit_idle();
 		}
 
+<<<<<<< HEAD
 		tick_nohz_idle_exit_norcu();
 		preempt_enable_no_resched();
 		schedule();
 		preempt_disable();
+=======
+		tick_nohz_idle_exit();
+		schedule_preempt_disabled();
+>>>>>>> bd2f553... sched/rt: Use schedule_preempt_disabled()
 	}
 }
 

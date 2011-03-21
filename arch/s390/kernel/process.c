@@ -96,9 +96,15 @@ void cpu_idle(void)
 			default_idle();
 		rcu_idle_exit();
 		tick_nohz_idle_exit();
+<<<<<<< HEAD
 		preempt_enable_no_resched();
 		schedule();
 		preempt_disable();
+=======
+		if (test_thread_flag(TIF_MCCK_PENDING))
+			s390_handle_mcck();
+		schedule_preempt_disabled();
+>>>>>>> bd2f553... sched/rt: Use schedule_preempt_disabled()
 	}
 }
 
