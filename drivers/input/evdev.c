@@ -70,7 +70,6 @@ static void evdev_pass_event(struct evdev_client *client,
 	/* Interrupts are disabled, just acquire the lock. */
 	spin_lock(&client->buffer_lock);
 
-	wake_lock_timeout(&client->wake_lock, 5 * HZ); //ICS
 	client->buffer[client->head++] = *event;
 	client->head &= client->bufsize - 1;
 
@@ -99,8 +98,6 @@ static void evdev_pass_event(struct evdev_client *client,
 	}
 
 	spin_unlock(&client->buffer_lock);
-	if (event->type == EV_SYN) //ICS
-		kill_fasync(&client->fasync, SIGIO, POLL_IN);
 }
 
 /*
@@ -203,7 +200,6 @@ static int evdev_grab(struct evdev *evdev, struct evdev_client *client)
 		return error;
 
 	rcu_assign_pointer(evdev->grab, client);
-	synchronize_rcu();//ICS
 
 	return 0;
 }
@@ -226,7 +222,6 @@ static void evdev_attach_client(struct evdev *evdev,
 	spin_lock(&evdev->client_lock);
 	list_add_tail_rcu(&client->node, &evdev->client_list);
 	spin_unlock(&evdev->client_lock);
-	synchronize_rcu(); //ICS 
 }
 
 static void evdev_detach_client(struct evdev *evdev,
@@ -364,7 +359,6 @@ static int evdev_open(struct inode *inode, struct file *file)
 
  err_free_client:
 	evdev_detach_client(evdev, client);
-	wake_lock_destroy(&client->wake_lock); //ICS 
 	kfree(client);
  err_put_evdev:
 	put_device(&evdev->dev);
@@ -414,8 +408,7 @@ static int evdev_fetch_next_event(struct evdev_client *client,
 
 	spin_lock_irq(&client->buffer_lock);
 
-	//-have_event = client->packet_head != client->tail;
-	have_event = client->head != client->tail;
+	have_event = client->packet_head != client->tail;
 	if (have_event) {
 		*event = client->buffer[client->tail++];
 		client->tail &= client->bufsize - 1;
@@ -439,23 +432,14 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
 
 	if (count < input_event_size())
 		return -EINVAL;
-#if 1 //ICS 
-	if (client->head == client->tail && evdev->exist &&
-	    (file->f_flags & O_NONBLOCK))
-		return -EAGAIN;
 
-	retval = wait_event_interruptible(evdev->wait,
-		client->head != client->tail || !evdev->exist);
-	if (retval)
-		return retval;
-#else  //JB
 	if (!(file->f_flags & O_NONBLOCK)) {
 		retval = wait_event_interruptible(evdev->wait,
-			 client->packet_head != client->tail || !evdev->exist);
+				client->packet_head != client->tail ||
+				!evdev->exist);
 		if (retval)
 			return retval;
 	}
-#endif 
 
 	if (!evdev->exist)
 		return -ENODEV;
@@ -469,8 +453,9 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
 		retval += input_event_size();
 	}
 
-	//if (retval == 0 && file->f_flags & O_NONBLOCK)
-	//	retval = -EAGAIN;
+	if (retval == 0 && (file->f_flags & O_NONBLOCK))
+		return -EAGAIN;
+
 	return retval;
 }
 
@@ -484,8 +469,7 @@ static unsigned int evdev_poll(struct file *file, poll_table *wait)
 	poll_wait(file, &evdev->wait, wait);
 
 	mask = evdev->exist ? POLLOUT | POLLWRNORM : POLLHUP | POLLERR;
-	//if (client->packet_head != client->tail)
-	if (client->head != client->tail)
+	if (client->packet_head != client->tail)
 		mask |= POLLIN | POLLRDNORM;
 
 	return mask;
