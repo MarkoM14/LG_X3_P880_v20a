@@ -23,6 +23,7 @@
 #include <linux/leds.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 
 #define KP_LEDS_GPIO 138
 
