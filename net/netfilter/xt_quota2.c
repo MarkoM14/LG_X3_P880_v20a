@@ -12,10 +12,12 @@
  *	version 2 of the License, as published by the Free Software Foundation.
  */
 #include <linux/list.h>
+#include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <asm/atomic.h>
+#include <net/netlink.h>
 
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_quota2.h>
@@ -80,10 +82,14 @@ static void quota2_log(unsigned int hooknum,
 		return;
 	}
 
-	/* NLMSG_PUT() uses "goto nlmsg_failure" */
-	nlh = NLMSG_PUT(log_skb, /*pid*/0, /*seq*/0, qlog_nl_event,
-			sizeof(*pm));
-	pm = NLMSG_DATA(nlh);
+	nlh = nlmsg_put(log_skb, /*pid*/0, /*seq*/0, qlog_nl_event,
+			sizeof(*pm), 0);
+	if (!nlh) {
+		pr_err("xt_quota2: nlmsg_put failed\n");
+		kfree_skb(log_skb);
+		return;
+	}
+	pm = nlmsg_data(nlh);
 	if (skb->tstamp.tv64 == 0)
 		__net_timestamp((struct sk_buff *)skb);
 	pm->data_len = 0;
@@ -105,9 +111,6 @@ static void quota2_log(unsigned int hooknum,
 	NETLINK_CB(log_skb).dst_group = 1;
 	pr_debug("throwing 1 packets to netlink group 1\n");
 	netlink_broadcast(nflognl, log_skb, 0, 1, GFP_ATOMIC);
-
-nlmsg_failure:  /* Used within NLMSG_PUT() */
-	pr_debug("xt_quota2: error during NLMSG_PUT\n");
 }
 #else
 static void quota2_log(unsigned int hooknum,
@@ -347,9 +350,7 @@ static int __init quota_mt2_init(void)
 	pr_debug("xt_quota2: init()");
 
 #ifdef CONFIG_NETFILTER_XT_MATCH_QUOTA2_LOG
-	nflognl = netlink_kernel_create(&init_net,
-					NETLINK_NFLOG, 1, NULL,
-					NULL, THIS_MODULE);
+	nflognl = netlink_kernel_create(&init_net, NETLINK_NFLOG, NULL);
 	if (!nflognl)
 		return -ENOMEM;
 #endif
