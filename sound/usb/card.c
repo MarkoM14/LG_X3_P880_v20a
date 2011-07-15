@@ -46,6 +46,7 @@
 #include <linux/mutex.h>
 #include <linux/usb/audio.h>
 #include <linux/usb/audio-v2.h>
+#include <linux/module.h>
 #ifdef CONFIG_SWITCH
 #include <linux/switch.h>
 #endif
