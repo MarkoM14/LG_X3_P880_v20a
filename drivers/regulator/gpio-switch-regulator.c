@@ -23,6 +23,7 @@
 /*#define VERBOSE_DEBUG		1*/
 
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/slab.h>
