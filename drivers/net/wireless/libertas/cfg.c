@@ -19,6 +19,7 @@
 #include "decl.h"
 #include "cfg.h"
 #include "cmd.h"
+#include "mesh.h"
 
 
 #define CHAN2G(_channel, _freq, _flags) {        \
@@ -442,13 +443,16 @@ static int lbs_cfg_set_channel(struct wiphy *wiphy,
 	struct lbs_private *priv = wiphy_priv(wiphy);
 	int ret = -ENOTSUPP;
 
-	lbs_deb_enter_args(LBS_DEB_CFG80211, "freq %d, type %d",
-			   channel->center_freq, channel_type);
+	lbs_deb_enter_args(LBS_DEB_CFG80211, "iface %s freq %d, type %d",
+			   netdev_name(netdev), channel->center_freq, channel_type);
 
 	if (channel_type != NL80211_CHAN_NO_HT)
 		goto out;
 
-	ret = lbs_set_channel(priv, channel->hw_value);
+	if (netdev == priv->mesh_dev)
+		ret = lbs_mesh_set_channel(priv, channel->hw_value);
+	else
+		ret = lbs_set_channel(priv, channel->hw_value);
 
  out:
 	lbs_deb_leave_args(LBS_DEB_CFG80211, "ret %d", ret);
@@ -1295,6 +1299,9 @@ static int lbs_cfg_connect(struct wiphy *wiphy, struct net_device *dev,
 	int ret = 0;
 	u8 preamble = RADIO_PREAMBLE_SHORT;
 
+	if (dev == priv->mesh_dev)
+		return -EOPNOTSUPP;
+
 	lbs_deb_enter(LBS_DEB_CFG80211);
 
 	if (!sme->bssid) {
@@ -1416,6 +1423,9 @@ static int lbs_cfg_disconnect(struct wiphy *wiphy, struct net_device *dev,
 	struct lbs_private *priv = wiphy_priv(wiphy);
 	struct cmd_ds_802_11_deauthenticate cmd;
 
+	if (dev == priv->mesh_dev)
+		return -EOPNOTSUPP;
+
 	lbs_deb_enter_args(LBS_DEB_CFG80211, "reason_code %d", reason_code);
 
 	/* store for lbs_cfg_ret_disconnect() */
@@ -1447,6 +1457,9 @@ static int lbs_cfg_set_default_key(struct wiphy *wiphy,
 {
 	struct lbs_private *priv = wiphy_priv(wiphy);
 
+	if (netdev == priv->mesh_dev)
+		return -EOPNOTSUPP;
+
 	lbs_deb_enter(LBS_DEB_CFG80211);
 
 	if (key_index != priv->wep_tx_key) {
@@ -1467,6 +1480,9 @@ static int lbs_cfg_add_key(struct wiphy *wiphy, struct net_device *netdev,
 	u16 key_info;
 	u16 key_type;
 	int ret = 0;
+
+	if (netdev == priv->mesh_dev)
+		return -EOPNOTSUPP;
 
 	lbs_deb_enter(LBS_DEB_CFG80211);
 
@@ -1611,6 +1627,9 @@ static int lbs_get_survey(struct wiphy *wiphy, struct net_device *dev,
 	s8 signal, noise;
 	int ret;
 
+	if (dev == priv->mesh_dev)
+		return -EOPNOTSUPP;
+
 	if (idx != 0)
 		ret = -ENOENT;
 
@@ -1643,6 +1662,9 @@ static int lbs_change_intf(struct wiphy *wiphy, struct net_device *dev,
 {
 	struct lbs_private *priv = wiphy_priv(wiphy);
 	int ret = 0;
+
+	if (dev == priv->mesh_dev)
+		return -EOPNOTSUPP;
 
 	lbs_deb_enter(LBS_DEB_CFG80211);
 
@@ -1969,6 +1991,9 @@ static int lbs_join_ibss(struct wiphy *wiphy, struct net_device *dev,
 	struct cfg80211_bss *bss;
 	DECLARE_SSID_BUF(ssid_buf);
 
+	if (dev == priv->mesh_dev)
+		return -EOPNOTSUPP;
+
 	lbs_deb_enter(LBS_DEB_CFG80211);
 
 	if (!params->channel) {
@@ -2004,6 +2029,9 @@ static int lbs_leave_ibss(struct wiphy *wiphy, struct net_device *dev)
 	struct lbs_private *priv = wiphy_priv(wiphy);
 	struct cmd_ds_802_11_ad_hoc_stop cmd;
 	int ret = 0;
+
+	if (dev == priv->mesh_dev)
+		return -EOPNOTSUPP;
 
 	lbs_deb_enter(LBS_DEB_CFG80211);
 
@@ -2127,6 +2155,8 @@ int lbs_cfg_register(struct lbs_private *priv)
 			BIT(NL80211_IFTYPE_ADHOC);
 	if (lbs_rtap_supported(priv))
 		wdev->wiphy->interface_modes |= BIT(NL80211_IFTYPE_MONITOR);
+	if (lbs_mesh_activated(priv))
+		wdev->wiphy->interface_modes |= BIT(NL80211_IFTYPE_MESH_POINT);
 
 	wdev->wiphy->bands[IEEE80211_BAND_2GHZ] = &lbs_band_2ghz;
 
