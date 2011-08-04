@@ -28,6 +28,7 @@
 
 #include <asm/assembler.h>
 #include <asm/cache.h>
+#include <asm/cp15.h>
 #include <asm/domain.h>
 #include <asm/memory.h>
 #include <asm/page.h>
@@ -35,7 +36,6 @@
 #include <asm/asm-offsets.h>
 #include <asm/glue-cache.h>
 #include <asm/glue-proc.h>
-#include <asm/system.h>
 
 #include <mach/iomap.h>
 #include <mach/io.h>
