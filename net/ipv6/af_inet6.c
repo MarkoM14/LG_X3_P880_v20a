@@ -506,7 +506,7 @@ int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 		return -EFAULT;
 
 	sin6.sin6_family = AF_INET6;
-	sin->sin6_addr = ireq.ifr6_addr;
+	sin6.sin6_addr = ireq.ifr6_addr;
 	return tcp_nuke_addr(net, (struct sockaddr *) &sin6);
 }
 
