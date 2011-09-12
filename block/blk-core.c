@@ -1290,7 +1290,7 @@ void init_request_from_bio(struct request *req, struct bio *bio)
 	blk_rq_bio_prep(req->q, req, bio);
 }
 
-int blk_queue_bio(struct request_queue *q, struct bio *bio)
+void blk_queue_bio(struct request_queue *q, struct bio *bio)
 {
 	const bool sync = !!(bio->bi_rw & REQ_SYNC);
 	struct blk_plug *plug;
@@ -1395,8 +1395,6 @@ get_rq:
 out_unlock:
 		spin_unlock_irq(q->queue_lock);
 	}
-out:
-	return 0;
 }
 EXPORT_SYMBOL_GPL(blk_queue_bio);	/* for device mapper only */
 
@@ -1524,10 +1522,10 @@ static inline int bio_check_eod(struct bio *bio, unsigned int nr_sectors)
 static inline void __generic_make_request(struct bio *bio)
 {
 	struct request_queue *q;
-	sector_t old_sector;
-	int ret, nr_sectors = bio_sectors(bio);
-	dev_t old_dev;
+	int nr_sectors = bio_sectors(bio);
 	int err = -EIO;
+	char b[BDEVNAME_SIZE];
+	struct hd_struct *part;
 
 	might_sleep();
 
@@ -1573,53 +1571,67 @@ static inline void __generic_make_request(struct bio *bio)
 					bio->bi_size))
 			goto end_io;
 
-		/*
-		 * If this device has partitions, remap block n
-		 * of partition p to block n+start(p) of the disk.
-		 */
-		blk_partition_remap(bio);
+	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
+		     nr_sectors > queue_max_hw_sectors(q))) {
+		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
+		       bdevname(bio->bi_bdev, b),
+		       bio_sectors(bio),
+		       queue_max_hw_sectors(q));
+		goto end_io;
+	}
 
-		if (bio_integrity_enabled(bio) && bio_integrity_prep(bio))
+	if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
+		goto end_io;
+
+	part = bio->bi_bdev->bd_part;
+	if (should_fail_request(part, bio->bi_size) ||
+	    should_fail_request(&part_to_disk(part)->part0,
+				bio->bi_size))
+		goto end_io;
+
+	/*
+	 * If this device has partitions, remap block n
+	 * of partition p to block n+start(p) of the disk.
+	 */
+	blk_partition_remap(bio);
+
+	if (bio_integrity_enabled(bio) && bio_integrity_prep(bio))
+		goto end_io;
+
+	if (bio_check_eod(bio, nr_sectors))
+		goto end_io;
+
+	/*
+	 * Filter flush bio's early so that make_request based
+	 * drivers without flush support don't have to worry
+	 * about them.
+	 */
+	if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) && !q->flush_flags) {
+		bio->bi_rw &= ~(REQ_FLUSH | REQ_FUA);
+		if (!nr_sectors) {
+			err = 0;
 			goto end_io;
-
-		if (old_sector != -1)
-			trace_block_bio_remap(q, bio, old_dev, old_sector);
-
-		old_sector = bio->bi_sector;
-		old_dev = bio->bi_bdev->bd_dev;
-
-		if (bio_check_eod(bio, nr_sectors))
-			goto end_io;
-
-		/*
-		 * Filter flush bio's early so that make_request based
-		 * drivers without flush support don't have to worry
-		 * about them.
-		 */
-		if ((bio->bi_rw & (REQ_FLUSH | REQ_FUA)) && !q->flush_flags) {
-			bio->bi_rw &= ~(REQ_FLUSH | REQ_FUA);
-			if (!nr_sectors) {
-				err = 0;
-				goto end_io;
-			}
 		}
+	}
 
-		if ((bio->bi_rw & REQ_DISCARD) &&
-		    (!blk_queue_discard(q) ||
-		     ((bio->bi_rw & REQ_SECURE) &&
-		      !blk_queue_secdiscard(q)))) {
-			err = -EOPNOTSUPP;
-			goto end_io;
-		}
+	if ((bio->bi_rw & REQ_DISCARD) &&
+	    (!blk_queue_discard(q) ||
+	     ((bio->bi_rw & REQ_SECURE) &&
+	      !blk_queue_secdiscard(q)))) {
+		err = -EOPNOTSUPP;
+		goto end_io;
+	}
 
 	if (blk_throtl_bio(q, bio))
 		return false;	/* throttled, will be resubmitted later */
 
-		trace_block_bio_queue(q, bio);
+	trace_block_bio_queue(q, bio);
 
-		ret = q->make_request_fn(q, bio);
-	} while (ret);
-
+	/* if bio = NULL, bio has been throttled and will be submitted later. */
+	if (!bio)
+		return;
+	trace_block_bio_queue(q, bio);
+	q->make_request_fn(q, bio);
 	return;
 
 end_io:
