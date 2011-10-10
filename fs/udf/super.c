@@ -546,8 +546,7 @@ static int udf_parse_options(char *options, struct udf_options *uopt,
 			uopt->dmode = option & 0777;
 			break;
 		default:
-			printk(KERN_ERR "udf: bad mount option \"%s\" "
-			       "or missing value\n", p);
+			pr_err("bad mount option \"%s\" or missing value\n", p);
 			return 0;
 		}
 	}
@@ -1105,11 +1104,9 @@ static int udf_load_vat(struct super_block *sb, int p_index, int type1_index)
 	udf_find_vat_block(sb, p_index, type1_index, sbi->s_last_block);
 	if (!sbi->s_vat_inode &&
 	    sbi->s_last_block != blocks - 1) {
-		printk(KERN_NOTICE "UDF-fs: Failed to read VAT inode from the"
-		       " last recorded block (%lu), retrying with the last "
-		       "block of the device (%lu).\n",
-		       (unsigned long)sbi->s_last_block,
-		       (unsigned long)blocks - 1);
+		pr_notice("Failed to read VAT inode from the last recorded block (%lu), retrying with the last block of the device (%lu).\n",
+			  (unsigned long)sbi->s_last_block,
+			  (unsigned long)blocks - 1);
 		udf_find_vat_block(sb, p_index, type1_index, blocks - 1);
 	}
 	if (!sbi->s_vat_inode)
@@ -1207,8 +1204,8 @@ static int udf_load_partdesc(struct super_block *sb, sector_t block)
 	if (map->s_partition_type == UDF_METADATA_MAP25) {
 		ret = udf_load_metadata_files(sb, i);
 		if (ret) {
-			printk(KERN_ERR "UDF-fs: error loading MetaData "
-			"partition map %d\n", i);
+			udf_err(sb, "error loading MetaData partition map %d\n",
+				i);
 			goto out_bh;
 		}
 	} else {
@@ -1221,9 +1218,7 @@ static int udf_load_partdesc(struct super_block *sb, sector_t block)
 		 * overwrite blocks instead of relocating them).
 		 */
 		sb->s_flags |= MS_RDONLY;
-		printk(KERN_NOTICE "UDF-fs: Filesystem marked read-only "
-			"because writing to pseudooverwrite partition is "
-			"not implemented.\n");
+		pr_notice("Filesystem marked read-only because writing to pseudooverwrite partition is not implemented\n");
 	}
 out_bh:
 	/* In case loading failed, we handle cleanup in udf_fill_super */
@@ -1465,9 +1460,9 @@ static noinline int udf_process_sequence(struct super_block *sb, long block,
 
 		bh = udf_read_tagged(sb, block, block, &ident);
 		if (!bh) {
-			printk(KERN_ERR "udf: Block %Lu of volume descriptor "
-			       "sequence is corrupted or we could not read "
-			       "it.\n", (unsigned long long)block);
+			udf_err(sb,
+				"Block %llu of volume descriptor sequence is corrupted or we could not read it\n",
+				(unsigned long long)block);
 			return 1;
 		}
 
@@ -1540,7 +1535,7 @@ static noinline int udf_process_sequence(struct super_block *sb, long block,
 	 * in a suitable order
 	 */
 	if (!vds[VDS_POS_PRIMARY_VOL_DESC].block) {
-		printk(KERN_ERR "udf: Primary Volume Descriptor not found!\n");
+		udf_err(sb, "Primary Volume Descriptor not found!\n");
 		return 1;
 	}
 	if (udf_load_pvoldesc(sb, vds[VDS_POS_PRIMARY_VOL_DESC].block))
@@ -1727,7 +1722,7 @@ static int udf_load_vrs(struct super_block *sb, struct udf_options *uopt,
 
 	if (!sb_set_blocksize(sb, uopt->blocksize)) {
 		if (!silent)
-			printk(KERN_WARNING "UDF-fs: Bad block size\n");
+			udf_warn(sb, "Bad block size\n");
 		return 0;
 	}
 	sbi->s_last_block = uopt->lastblock;
@@ -1736,7 +1731,7 @@ static int udf_load_vrs(struct super_block *sb, struct udf_options *uopt,
 		nsr_off = udf_check_vsd(sb);
 		if (!nsr_off) {
 			if (!silent)
-				printk(KERN_WARNING "UDF-fs: No VRS found\n");
+				udf_warn(sb, "No VRS found\n");
 			return 0;
 		}
 		if (nsr_off == -1)
@@ -1752,7 +1747,7 @@ static int udf_load_vrs(struct super_block *sb, struct udf_options *uopt,
 	sbi->s_anchor = uopt->anchor;
 	if (!udf_find_anchor(sb, fileset)) {
 		if (!silent)
-			printk(KERN_WARNING "UDF-fs: No anchor found\n");
+			udf_warn(sb, "No anchor found\n");
 		return 0;
 	}
 	return 1;
@@ -1973,15 +1968,14 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
 		ret = udf_load_vrs(sb, &uopt, silent, &fileset);
 		if (!ret && uopt.blocksize != UDF_DEFAULT_BLOCKSIZE) {
 			if (!silent)
-				printk(KERN_NOTICE
-				       "UDF-fs: Rescanning with blocksize "
-				       "%d\n", UDF_DEFAULT_BLOCKSIZE);
+				pr_notice("Rescanning with blocksize %d\n",
+					  UDF_DEFAULT_BLOCKSIZE);
 			uopt.blocksize = UDF_DEFAULT_BLOCKSIZE;
 			ret = udf_load_vrs(sb, &uopt, silent, &fileset);
 		}
 	}
 	if (!ret) {
-		printk(KERN_WARNING "UDF-fs: No partition found (1)\n");
+		udf_warn(sb, "No partition found (1)\n");
 		goto error_out;
 	}
 
@@ -1996,10 +1990,9 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
 				le16_to_cpu(lvidiu->maxUDFWriteRev); */
 
 		if (minUDFReadRev > UDF_MAX_READ_VERSION) {
-			printk(KERN_ERR "UDF-fs: minUDFReadRev=%x "
-					"(max is %x)\n",
-			       le16_to_cpu(lvidiu->minUDFReadRev),
-			       UDF_MAX_READ_VERSION);
+			udf_err(sb, "minUDFReadRev=%x (max is %x)\n",
+				le16_to_cpu(lvidiu->minUDFReadRev),
+				UDF_MAX_READ_VERSION);
 			goto error_out;
 		} else if (minUDFWriteRev > UDF_MAX_WRITE_VERSION)
 			sb->s_flags |= MS_RDONLY;
@@ -2013,28 +2006,27 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
 	}
 
 	if (!sbi->s_partitions) {
-		printk(KERN_WARNING "UDF-fs: No partition found (2)\n");
+		udf_warn(sb, "No partition found (2)\n");
 		goto error_out;
 	}
 
 	if (sbi->s_partmaps[sbi->s_partition].s_partition_flags &
 			UDF_PART_FLAG_READ_ONLY) {
-		printk(KERN_NOTICE "UDF-fs: Partition marked readonly; "
-				   "forcing readonly mount\n");
+		pr_notice("Partition marked readonly; forcing readonly mount\n");
 		sb->s_flags |= MS_RDONLY;
 	}
 
 	if (udf_find_fileset(sb, &fileset, &rootdir)) {
-		printk(KERN_WARNING "UDF-fs: No fileset found\n");
+		udf_warn(sb, "No fileset found\n");
 		goto error_out;
 	}
 
 	if (!silent) {
 		struct timestamp ts;
 		udf_time_to_disk_stamp(&ts, sbi->s_record_time);
-		udf_info("UDF: Mounting volume '%s', "
-			 "timestamp %04u/%02u/%02u %02u:%02u (%x)\n",
-			 sbi->s_volume_ident, le16_to_cpu(ts.year), ts.month, ts.day,
+		udf_info("Mounting volume '%s', timestamp %04u/%02u/%02u %02u:%02u (%x)\n",
+			 sbi->s_volume_ident,
+			 le16_to_cpu(ts.year), ts.month, ts.day,
 			 ts.hour, ts.minute, le16_to_cpu(ts.typeAndTimezone));
 	}
 	if (!(sb->s_flags & MS_RDONLY))
@@ -2045,8 +2037,7 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
 	/* perhaps it's not extensible enough, but for now ... */
 	inode = udf_iget(sb, &rootdir);
 	if (!inode) {
-		printk(KERN_ERR "UDF-fs: Error in udf_iget, block=%d, "
-				"partition=%d\n",
+		udf_err(sb, "Error in udf_iget, block=%d, partition=%d\n",
 		       rootdir.logicalBlockNum, rootdir.partitionReferenceNum);
 		goto error_out;
 	}
@@ -2054,7 +2045,7 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
 	/* Allocate a dentry for the root inode */
 	sb->s_root = d_alloc_root(inode);
 	if (!sb->s_root) {
-		printk(KERN_ERR "UDF-fs: Couldn't allocate root dentry\n");
+		udf_err(sb, "Couldn't allocate root dentry\n");
 		iput(inode);
 		goto error_out;
 	}
@@ -2094,7 +2085,7 @@ void _udf_err(struct super_block *sb, const char *function,
 	va_start(args, fmt);
 	vsnprintf(error_buf, sizeof(error_buf), fmt, args);
 	va_end(args);
-	printk(KERN_CRIT "UDF-fs error (device %s): %s: %s",
+	pr_crit("error (device %s): %s: %s",
 	       sb->s_id, function, error_buf);
 }
 
@@ -2106,7 +2097,7 @@ void _udf_warn(struct super_block *sb, const char *function,
 	va_start(args, fmt);
 	vsnprintf(error_buf, sizeof(error_buf), fmt, args);
 	va_end(args);
-	printk(KERN_WARNING "UDF-fs warning (device %s): %s: %s",
+	pr_warn("warning (device %s): %s: %s",
 	       sb->s_id, function, error_buf);
 }
 
@@ -2199,11 +2190,11 @@ static unsigned int udf_count_free_bitmap(struct super_block *sb,
 	bh = udf_read_ptagged(sb, &loc, 0, &ident);
 
 	if (!bh) {
-		printk(KERN_ERR "udf: udf_count_free failed\n");
+		udf_err(sb, "udf_count_free failed\n");
 		goto out;
 	} else if (ident != TAG_IDENT_SBD) {
 		brelse(bh);
-		printk(KERN_ERR "udf: udf_count_free failed\n");
+		udf_err(sb, "udf_count_free failed\n");
 		goto out;
 	}
 
