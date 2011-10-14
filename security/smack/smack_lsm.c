@@ -34,6 +34,7 @@
 #include <linux/audit.h>
 #include <linux/magic.h>
 #include <linux/dcache.h>
+#include <linux/personality.h>
 #include "smack.h"
 
 #define task_security(task)	(task_cred_xxx((task), security))
