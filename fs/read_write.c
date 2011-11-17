@@ -12,7 +12,7 @@
 #include <linux/aio.h>
 #include <linux/fsnotify.h>
 #include <linux/security.h>
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/syscalls.h>
 #include <linux/pagemap.h>
 #include <linux/splice.h>
