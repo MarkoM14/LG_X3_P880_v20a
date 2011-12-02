@@ -602,7 +602,7 @@ struct rq {
 	unsigned long last_load_update_tick;
 #ifdef CONFIG_NO_HZ
 	u64 nohz_stamp;
-	unsigned char nohz_balance_kick;
+	unsigned long nohz_flags;
 #endif
 	int skip_clock_update;
 
@@ -713,6 +713,16 @@ struct rq {
 	struct task_struct *wake_list;
 #endif
 };
+
+#ifdef CONFIG_NO_HZ
+enum rq_nohz_flag_bits {
+	NOHZ_TICK_STOPPED,
+	NOHZ_BALANCE_KICK,
+	NOHZ_IDLE,
+};
+
+#define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
+#endif
 
 static DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
 
@@ -1418,7 +1428,8 @@ void wake_up_idle_cpu(int cpu)
 
 static inline bool got_nohz_idle_kick(void)
 {
-	return idle_cpu(smp_processor_id()) && this_rq()->nohz_balance_kick;
+	int cpu = smp_processor_id();
+	return idle_cpu(cpu) && test_bit(NOHZ_BALANCE_KICK, nohz_flags(cpu));
 }
 
 #else /* CONFIG_NO_HZ */
@@ -7483,6 +7494,7 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
 		return;
 
 	update_group_power(sd, cpu);
+	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
 }
 
 /*
@@ -8411,7 +8423,7 @@ void __init sched_init(void)
 		rq->avg_idle = 2*sysctl_sched_migration_cost;
 		rq_attach_root(rq, &def_root_domain);
 #ifdef CONFIG_NO_HZ
-		rq->nohz_balance_kick = 0;
+		rq->nohz_flags = 0;
 #endif
 #endif
 		init_rq_hrtick(rq);
