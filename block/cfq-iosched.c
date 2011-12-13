@@ -55,9 +55,9 @@ static const int cfq_hist_divisor = 4;
 #define CFQQ_SEEKY(cfqq)	(hweight32(cfqq->seek_history) > 32/8)
 
 #define RQ_CIC(rq)		\
-	((struct cfq_io_context *) (rq)->elevator_private[0])
-#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elevator_private[1])
-#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elevator_private[2])
+	((struct cfq_io_context *) (rq)->elv.icq[0])
+#define RQ_CFQQ(rq)		(struct cfq_queue *) ((rq)->elv.priv[1])
+#define RQ_CFQG(rq)		(struct cfq_group *) ((rq)->elv.priv[2])
 
 static struct kmem_cache *cfq_pool;
 static struct kmem_cache *cfq_ioc_pool;
@@ -283,8 +283,6 @@ struct cfq_data {
 	unsigned int cfq_slice_idle;
 	unsigned int cfq_group_idle;
 	unsigned int cfq_latency;
-
-	struct list_head cic_list;
 
 	/*
 	 * Fallback dummy cfqq for extreme OOM conditions
@@ -3041,7 +3039,7 @@ static int cfq_cic_link(struct cfq_data *cfqd, struct io_context *ioc,
 
 	if (!ret) {
 		spin_lock_irqsave(cfqd->queue->queue_lock, flags);
-		list_add(&cic->queue_list, &cfqd->cic_list);
+		list_add(&cic->queue_list, &q->cic_list);
 		spin_unlock_irqrestore(cfqd->queue->queue_lock, flags);
 	}
 out:
@@ -3583,12 +3581,10 @@ static void cfq_put_request(struct request *rq)
 
 		put_io_context(RQ_CIC(rq)->ioc, cfqq->cfqd->queue);
 
-		rq->elevator_private[0] = NULL;
-		rq->elevator_private[1] = NULL;
-
 		/* Put down rq reference on cfqg */
 		cfq_put_cfqg(RQ_CFQG(rq));
-		rq->elevator_private[2] = NULL;
+		rq->elv.priv[0] = NULL;
+		rq->elv.priv[1] = NULL;
 
 		cfq_put_queue(cfqq);
 	}
@@ -3677,9 +3673,9 @@ new_queue:
 	cfqq->allocated[rw]++;
 
 	cfqq->ref++;
-	rq->elevator_private[0] = cic;
-	rq->elevator_private[1] = cfqq;
-	rq->elevator_private[2] = cfq_ref_get_cfqg(cfqq->cfqg);
+	rq->elv.icq[0] = cic;
+	rq->elv.priv[1] = cfqq;
+	rq->elv.priv[2] = cfq_ref_get_cfqg(cfqq->cfqg);
 	spin_unlock_irqrestore(q->queue_lock, flags);
 	return 0;
 
@@ -3791,8 +3787,8 @@ static void cfq_exit_queue(struct elevator_queue *e)
 	if (cfqd->active_queue)
 		__cfq_slice_expired(cfqd, cfqd->active_queue, 0);
 
-	while (!list_empty(&cfqd->cic_list)) {
-		struct cfq_io_context *cic = list_entry(cfqd->cic_list.next,
+	while (!list_empty(&q->cic_list)) {
+		struct cfq_io_context *cic = list_entry(q->cic_list.next,
 							struct cfq_io_context,
 							queue_list);
 		struct io_context *ioc = cic->ioc;
@@ -3908,8 +3904,6 @@ static void *cfq_init_queue(struct request_queue *q)
 	cfq_init_cfqq(cfqd, &cfqd->oom_cfqq, 1, 0);
 	cfqd->oom_cfqq.ref++;
 	cfq_link_cfqq_cfqg(&cfqd->oom_cfqq, &cfqd->root_group);
-
-	INIT_LIST_HEAD(&cfqd->cic_list);
 
 	cfqd->queue = q;
 
