@@ -78,22 +78,16 @@ static inline struct io_context *ioc_task_link(struct io_context *ioc)
 
 struct task_struct;
 #ifdef CONFIG_BLOCK
-int put_io_context(struct io_context *ioc);
+void put_io_context(struct io_context *ioc);
 void exit_io_context(struct task_struct *task);
 struct io_context *get_task_io_context(struct task_struct *task,
 				       gfp_t gfp_flags, int node);
 void ioc_ioprio_changed(struct io_context *ioc, int ioprio);
 void ioc_cgroup_changed(struct io_context *ioc);
 #else
-static inline void exit_io_context(struct task_struct *task)
-{
-}
-
 struct io_context;
-static inline int put_io_context(struct io_context *ioc)
-{
-	return 1;
-}
+static inline void put_io_context(struct io_context *ioc) { }
+static inline void exit_io_context(struct task_struct *task) { }
 #endif
 
 #endif
