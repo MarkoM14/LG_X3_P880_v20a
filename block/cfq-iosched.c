@@ -3064,7 +3064,7 @@ cfq_get_io_context(struct cfq_data *cfqd, gfp_t gfp_mask)
 
 	might_sleep_if(gfp_mask & __GFP_WAIT);
 
-	ioc = current_io_context(gfp_mask, cfqd->queue->node);
+	ioc = create_io_context(current, gfp_mask, cfqd->queue->node);
 	if (!ioc)
 		goto err;
 
