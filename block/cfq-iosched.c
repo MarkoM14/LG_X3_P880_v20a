@@ -62,9 +62,6 @@ static const int cfq_hist_divisor = 4;
 static struct kmem_cache *cfq_pool;
 static struct kmem_cache *cfq_ioc_pool;
 
-static DEFINE_SPINLOCK(cic_index_lock);
-static DEFINE_IDA(cic_index_ida);
-
 #define CFQ_PRIO_LISTS		IOPRIO_BE_NR
 #define cfq_class_idle(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_IDLE)
 #define cfq_class_rt(cfqq)	((cfqq)->ioprio_class == IOPRIO_CLASS_RT)
@@ -287,7 +284,6 @@ struct cfq_data {
 	unsigned int cfq_group_idle;
 	unsigned int cfq_latency;
 
-	unsigned int cic_index;
 	struct list_head cic_list;
 
 	/*
@@ -481,7 +477,7 @@ static inline void cic_set_cfqq(struct cfq_io_context *cic,
 
 static inline void *cfqd_dead_key(struct cfq_data *cfqd)
 {
-	return (void *)(cfqd->cic_index << CIC_DEAD_INDEX_SHIFT | CIC_DEAD_KEY);
+	return (void *)(cfqd->queue->id << CIC_DEAD_INDEX_SHIFT | CIC_DEAD_KEY);
 }
 
 static inline struct cfq_data *cic_to_cfqd(struct cfq_io_context *cic)
@@ -3013,6 +3009,7 @@ cfq_cic_lookup(struct cfq_data *cfqd, struct io_context *ioc)
 		cic = NULL;
 out:
 	rcu_read_unlock();
+
 	return cic;
 }
 
@@ -3820,10 +3817,6 @@ static void cfq_exit_queue(struct elevator_queue *e)
 
 	cfq_shutdown_timer_wq(cfqd);
 
-	spin_lock(&cic_index_lock);
-	ida_remove(&cic_index_ida, cfqd->cic_index);
-	spin_unlock(&cic_index_lock);
-
 	/*
 	 * Wait for cfqg->blkg->key accessors to exit their grace periods.
 	 * Do this wait only if there are other unlinked groups out
@@ -3845,24 +3838,6 @@ static void cfq_exit_queue(struct elevator_queue *e)
 	kfree(cfqd);
 }
 
-static int cfq_alloc_cic_index(void)
-{
-	int index, error;
-
-	do {
-		if (!ida_pre_get(&cic_index_ida, GFP_KERNEL))
-			return -ENOMEM;
-
-		spin_lock(&cic_index_lock);
-		error = ida_get_new(&cic_index_ida, &index);
-		spin_unlock(&cic_index_lock);
-		if (error && error != -EAGAIN)
-			return error;
-	} while (error);
-
-	return index;
-}
-
 static void *cfq_init_queue(struct request_queue *q)
 {
 	struct cfq_data *cfqd;
@@ -3870,23 +3845,9 @@ static void *cfq_init_queue(struct request_queue *q)
 	struct cfq_group *cfqg;
 	struct cfq_rb_root *st;
 
-	i = cfq_alloc_cic_index();
-	if (i < 0)
-		return NULL;
-
 	cfqd = kmalloc_node(sizeof(*cfqd), GFP_KERNEL | __GFP_ZERO, q->node);
-	if (!cfqd) {
-		spin_lock(&cic_index_lock);
-		ida_remove(&cic_index_ida, i);
-		spin_unlock(&cic_index_lock);
+	if (!cfqd)
 		return NULL;
-	}
-
-	/*
-	 * Don't need take queue_lock in the routine, since we are
-	 * initializing the ioscheduler, and nobody is using cfqd
-	 */
-	cfqd->cic_index = i;
 
 	/* Init root service tree */
 	cfqd->grp_service_tree = CFQ_RB_ROOT;
