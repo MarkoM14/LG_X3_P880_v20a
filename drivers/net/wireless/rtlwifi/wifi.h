@@ -1446,7 +1446,7 @@ struct rtl_intf_ops {
 
 struct rtl_mod_params {
 	/* default: 0 = using hardware encryption */
-	int sw_crypto;
+	bool sw_crypto;
 
 	/* default: 1 = using no linked power save */
 	bool inactiveps;
