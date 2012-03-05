@@ -530,7 +530,7 @@ done:
  * this dispatch queue
  *
  */
-static void *row_init_queue(struct request_queue *q)
+static int row_init_queue(struct request_queue *q)
 {
 
 	struct row_data *rdata;
@@ -539,7 +539,7 @@ static void *row_init_queue(struct request_queue *q)
 	rdata = kmalloc_node(sizeof(*rdata),
 			     GFP_KERNEL | __GFP_ZERO, q->node);
 	if (!rdata)
-		return NULL;
+		return -ENOMEM;
 
 	for (i = 0; i < ROWQ_MAX_PRIO; i++) {
 		INIT_LIST_HEAD(&rdata->row_queues[i].fifo);
@@ -569,10 +569,11 @@ static void *row_init_queue(struct request_queue *q)
 
 	rdata->curr_queue = ROWQ_PRIO_HIGH_READ;
 	rdata->dispatch_queue = q;
+	q->elevator->elevator_data = rdata;
 
 	rdata->nr_reqs[READ] = rdata->nr_reqs[WRITE] = 0;
 
-	return rdata;
+	return 0;
 }
 
 /*
