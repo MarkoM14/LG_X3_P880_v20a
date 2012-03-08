@@ -399,6 +399,9 @@ static ssize_t ram_console_read_old(struct file *file, char __user *buf,
 	char *str;
 	int ret;
 
+	if (dmesg_restrict && !capable(CAP_SYSLOG))
+		return -EPERM;
+
 	/* Main last_kmsg log */
 	if (pos < ram_console_old_log_size) {
 		count = min(len, (size_t)(ram_console_old_log_size - pos));
