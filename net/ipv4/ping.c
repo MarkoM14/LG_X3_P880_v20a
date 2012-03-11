@@ -283,7 +283,7 @@ EXPORT_SYMBOL_GPL(ping_init_sock);
 void ping_close(struct sock *sk, long timeout)
 {
 	pr_debug("ping_close(sk=%p,sk->num=%u)\n",
-		inet_sk(sk), inet_sk(sk)->inet_num);
+		 inet_sk(sk), inet_sk(sk)->inet_num);
 	pr_debug("isk->refcnt = %d\n", sk->sk_refcnt.counter);
 
 	sk_common_release(sk);
@@ -420,7 +420,7 @@ int ping_bind(struct sock *sk, struct sockaddr *uaddr, int addr_len)
 	}
 
 	pr_debug("after bind(): num = %d, dif = %d\n",
-		 (int)isk->inet_num,
+ 		 (int)isk->inet_num,
 		 (int)sk->sk_bound_dev_if);
 
 	err = 0;
@@ -934,7 +934,7 @@ EXPORT_SYMBOL_GPL(ping_recvmsg);
 int ping_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 {
 	pr_debug("ping_queue_rcv_skb(sk=%p,sk->num=%d,skb=%p)\n",
-		inet_sk(sk), inet_sk(sk)->inet_num, skb);
+		 inet_sk(sk), inet_sk(sk)->inet_num, skb);
 	if (sock_queue_rcv_skb(sk, skb) < 0) {
 		kfree_skb(skb);
 		pr_debug("ping_queue_rcv_skb -> failed\n");
@@ -958,7 +958,7 @@ void ping_rcv(struct sk_buff *skb)
 	/* We assume the packet has already been checked by icmp_rcv */
 
 	pr_debug("ping_rcv(skb=%p,id=%04x,seq=%04x)\n",
-		skb, ntohs(icmph->un.echo.id), ntohs(icmph->un.echo.sequence));
+		 skb, ntohs(icmph->un.echo.id), ntohs(icmph->un.echo.sequence));
 
 	/* Push ICMP header back */
 	skb_push(skb, skb->data - (u8 *)icmph);
