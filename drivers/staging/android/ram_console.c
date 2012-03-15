@@ -391,6 +391,10 @@ static int __init ram_console_module_init(void)
 	return err;
 }
 
+#ifndef CONFIG_PRINTK
+#define dmesg_restrict	0
+#endif
+
 static ssize_t ram_console_read_old(struct file *file, char __user *buf,
 				    size_t len, loff_t *offset)
 {
