@@ -108,4 +108,7 @@
  */
 #define PR_SET_TIMERSLACK_PID 41
 
+#define PR_SET_CHILD_SUBREAPER 36
+#define PR_GET_CHILD_SUBREAPER 37
+
 #endif /* _LINUX_PRCTL_H */
