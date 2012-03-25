@@ -23,7 +23,7 @@
 //                     
 #ifdef CONFIG_MACH_X3
 #include <linux/cpufreq.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <mach/clk.h>
 #endif /* CONFIG_MACH_X3 */
 

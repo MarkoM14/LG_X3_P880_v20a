@@ -33,7 +33,7 @@
 #include <linux/input.h>
 
 #include <linux/cpufreq.h>
-#include <linux/pm_qos_params.h>
+//#include <linux/pm_qos.h>
 #include <mach/clk.h>
 
 #include <asm/atomic.h>

@@ -26,7 +26,7 @@
 #include <linux/uaccess.h>
 #include <linux/delay.h>
 #include <linux/cpufreq.h>
-#include <linux/pm_qos_params.h>                                         
+#include <linux/pm_qos.h>                                         
 #include <mach/iomap.h>
 #include <mach/clk.h>
 #include <mach/powergate.h>

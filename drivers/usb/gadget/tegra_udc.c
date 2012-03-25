@@ -37,7 +37,7 @@
 #include <linux/workqueue.h>
 #include <linux/err.h>
 #include <linux/io.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 
 #include <asm/byteorder.h>
 #include <asm/io.h>

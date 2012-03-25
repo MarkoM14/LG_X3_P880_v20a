@@ -43,7 +43,7 @@
 #include "cpu-tegra.h"
 #include "dvfs.h"
 
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
