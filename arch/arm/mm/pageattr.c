@@ -325,7 +325,7 @@ pte_t *lookup_address(unsigned long address, unsigned int *level)
 	if (pgd == NULL || pgd_none(*pgd))
 		return NULL;
 
-	pmd = pmd_offset(pgd, address);
+	pmd = pmd_offset(pud_offset(pgd, address), address);
 
 	if (pmd == NULL || pmd_none(*pmd) || !pmd_present(*pmd))
 		return NULL;
@@ -357,6 +357,7 @@ EXPORT_SYMBOL_GPL(lookup_address);
 static void __set_pmd_pte(pmd_t *pmd, unsigned long address, pte_t *pte)
 {
 	struct page *page;
+	pud_t *pud;
 
 	cpa_debug("__set_pmd_pte %x %x %x\n", pmd, pte, *pte);
 
@@ -371,8 +372,9 @@ static void __set_pmd_pte(pmd_t *pmd, unsigned long address, pte_t *pte)
 	list_for_each_entry(page, &pgd_list, lru) {
 		cpa_debug("list %x %x %x\n", (unsigned long)page,
 			(unsigned long)pgd_index(address), address);
-		pmd = pmd_offset(((pgd_t *)page_address(page)) +
+		pud = pud_offset(((pgd_t *)page_address(page)) +
 			pgd_index(address), address);
+		pmd = pmd_offset(pud, address);
 		pmd_populate_kernel(NULL, pmd, pte);
 	}
 	/* enforce pmd entry stores ordering to avoid tlb flush bypassing
