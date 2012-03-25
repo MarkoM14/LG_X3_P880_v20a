@@ -34,6 +34,7 @@
 #include <linux/smp.h>
 #include <linux/suspend.h>
 #include <linux/tick.h>
+#include <linux/module.h>
 
 #include <asm/cpu_pm.h>
 
