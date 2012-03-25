@@ -60,7 +60,7 @@ struct cpuidle_driver tegra_idle = {
 static DEFINE_PER_CPU(struct cpuidle_device *, idle_devices);
 
 static int tegra_idle_enter_lp3(struct cpuidle_device *dev,
-	struct cpuidle_state *state)
+	int index)
 {
 	ktime_t enter, exit;
 	s64 us;
@@ -79,7 +79,9 @@ static int tegra_idle_enter_lp3(struct cpuidle_device *dev,
 
 	local_fiq_enable();
 	local_irq_enable();
-	return (int)us;
+
+	dev->last_residency = (int)us;
+	return index;
 }
 
 static bool lp2_in_idle __read_mostly = false;
@@ -108,15 +110,17 @@ void tegra_lp2_update_target_residency(struct cpuidle_state *state)
 }
 
 static int tegra_idle_enter_lp2(struct cpuidle_device *dev,
-	struct cpuidle_state *state)
+	int index)
 {
 	ktime_t enter, exit;
 	s64 us;
+	struct cpuidle_state *state = &dev->states[index];
+	bool entered_lp2;
 
 	if (!lp2_in_idle || lp2_disabled_by_suspend ||
 	    !tegra_lp2_is_allowed(dev, state)) {
-		dev->last_state = &dev->states[0];
-		return tegra_idle_enter_lp3(dev, state);
+		return dev->states[dev->safe_state_index].enter(dev,
+					dev->safe_state_index);
 	}
 
 	trace_printk("LP2 entry at %lu us\n",
@@ -127,7 +131,7 @@ static int tegra_idle_enter_lp2(struct cpuidle_device *dev,
 	enter = ktime_get();
 
 	tegra_cpu_idle_stats_lp2_ready(dev->cpu);
-	tegra_idle_lp2(dev, state);
+	entered_lp2 = tegra_idle_lp2(dev, state);
 
 	trace_printk("LP2 exit at %lu us\n",
 		     (unsigned long)readl(IO_ADDRESS(TEGRA_TMR1_BASE)
@@ -141,13 +145,14 @@ static int tegra_idle_enter_lp2(struct cpuidle_device *dev,
 	smp_rmb();
 
 	/* Update LP2 latency provided no fall back to LP3 */
-	if (state == dev->last_state) {
+	if (entered_lp2) {
 		tegra_lp2_set_global_latency(state);
 		tegra_lp2_update_target_residency(state);
 	}
 	tegra_cpu_idle_stats_lp2_time(dev->cpu, us);
 
-	return (int)us;
+	dev->last_residency = (int)us;
+	return (entered_lp2) ? index : 0;
 }
 #endif
 
@@ -183,7 +188,7 @@ static int tegra_cpuidle_register_device(unsigned int cpu)
 	state->power_usage = 600;
 	state->flags = CPUIDLE_FLAG_TIME_VALID;
 	state->enter = tegra_idle_enter_lp3;
-	dev->safe_state = state;
+	dev->safe_state_index = 0;
 	dev->state_count++;
 
 #ifdef CONFIG_PM_SLEEP
@@ -201,7 +206,6 @@ static int tegra_cpuidle_register_device(unsigned int cpu)
 	state->enter = tegra_idle_enter_lp2;
 
 	dev->power_specified = 1;
-	dev->safe_state = state;
 	dev->state_count++;
 #endif
 
