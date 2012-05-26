@@ -959,7 +959,6 @@ config UIDGID_CONVERTED
 	depends on TUN = n
 	depends on INFINIBAND_QIB = n
 	depends on BLK_DEV_LOOP = n
-	depends on ANDROID_BINDER_IPC = n
 
 	# Security modules
 	depends on SECURITY_TOMOYO = n
