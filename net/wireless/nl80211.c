@@ -1087,6 +1087,7 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 		nla_nest_end(msg, nl_ifs);
 	}
 
+#ifdef CONFIG_PM
 	if (dev->wiphy.wowlan.flags || dev->wiphy.wowlan.n_patterns) {
 		struct nlattr *nl_wowlan;
 
@@ -1125,6 +1126,7 @@ static int nl80211_send_wiphy(struct sk_buff *msg, u32 pid, u32 seq, int flags,
 
 		nla_nest_end(msg, nl_wowlan);
 	}
+#endif
 
 	if (nl80211_put_iftypes(msg, NL80211_ATTR_SOFTWARE_IFTYPES,
 				dev->wiphy.software_iftypes))
@@ -6263,6 +6265,7 @@ static int nl80211_leave_mesh(struct sk_buff *skb, struct genl_info *info)
 	return cfg80211_leave_mesh(rdev, dev);
 }
 
+#ifdef CONFIG_PM
 static int nl80211_get_wowlan(struct sk_buff *skb, struct genl_info *info)
 {
 	struct cfg80211_registered_device *rdev = info->user_ptr[0];
@@ -6489,6 +6492,7 @@ static int nl80211_set_wowlan(struct sk_buff *skb, struct genl_info *info)
 	kfree(new_triggers.patterns);
 	return err;
 }
+#endif
 
 static int nl80211_set_rekey_data(struct sk_buff *skb, struct genl_info *info)
 {
@@ -7163,6 +7167,7 @@ static struct genl_ops nl80211_ops[] = {
 		.internal_flags = NL80211_FLAG_NEED_NETDEV_UP |
 				  NL80211_FLAG_NEED_RTNL,
 	},
+#ifdef CONFIG_PM
 	{
 		.cmd = NL80211_CMD_GET_WOWLAN,
 		.doit = nl80211_get_wowlan,
@@ -7179,6 +7184,7 @@ static struct genl_ops nl80211_ops[] = {
 		.internal_flags = NL80211_FLAG_NEED_WIPHY |
 				  NL80211_FLAG_NEED_RTNL,
 	},
+#endif
 	{
 		.cmd = NL80211_CMD_SET_REKEY_OFFLOAD,
 		.doit = nl80211_set_rekey_data,
