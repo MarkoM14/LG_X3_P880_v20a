@@ -306,6 +306,10 @@ int cfg80211_join_mesh(struct cfg80211_registered_device *rdev,
 int cfg80211_leave_mesh(struct cfg80211_registered_device *rdev,
 			struct net_device *dev);
 
+/* AP */
+int cfg80211_stop_ap(struct cfg80211_registered_device *rdev,
+		     struct net_device *dev);
+
 /* MLME */
 int __cfg80211_mlme_auth(struct cfg80211_registered_device *rdev,
 			 struct net_device *dev,
