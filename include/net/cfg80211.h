@@ -1459,7 +1459,8 @@ struct cfg80211_update_ft_ies_params {
  *	doesn't verify much. Note, however, that the passed netdev may be
  *	%NULL as well if the user requested changing the channel for the
  *	device itself, or for a monitor interface.
- *
+ * @set_monitor_enabled: Notify driver that there are only monitor
+ *	interfaces running.
  * @scan: Request to do a scan. If returning zero, the scan request is given
  *	the driver, and will be valid until passed to cfg80211_scan_done().
  *	For scan results, call cfg80211_inform_bss(); you can call this outside
@@ -1760,6 +1761,7 @@ struct cfg80211_ops {
 
 	int (*set_mac_acl)(struct wiphy *wiphy, struct net_device *dev,
 			   const struct cfg80211_acl_data *params);
+	void (*set_monitor_enabled)(struct wiphy *wiphy, bool enabled);
 };
 
 /*
