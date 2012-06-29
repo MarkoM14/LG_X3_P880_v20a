@@ -97,6 +97,8 @@ int cfg80211_set_freq(struct cfg80211_registered_device *rdev,
 
 	if (!rdev->ops->set_channel)
 		return -EOPNOTSUPP;
+	if (!cfg80211_has_monitors_only(rdev))
+		return -EBUSY;
 
 	chan = rdev_freq_to_chan(rdev, freq, channel_type);
 	if (!chan)
