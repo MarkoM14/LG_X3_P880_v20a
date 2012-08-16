@@ -20,7 +20,7 @@
 #include <linux/cpuquiet.h>
 #include <linux/cpumask.h>
 #include <linux/module.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/jiffies.h>
 #include <linux/slab.h>
 #include <linux/cpu.h>
