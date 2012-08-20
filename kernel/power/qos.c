@@ -41,7 +41,7 @@
 #include <linux/platform_device.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
-
+#include <linux/moduleparam.h>
 #include <linux/uaccess.h>
 #include <linux/export.h>
 
@@ -259,8 +259,12 @@ int pm_qos_update_target(struct pm_qos_constraints *c, struct plist_node *node,
 		;
 	}
 
-	curr_value = pm_qos_get_value(c);
-	pm_qos_set_value(c, curr_value);
+	if (pm_qos_enabled) {
+		curr_value = pm_qos_get_value(c);
+		pm_qos_set_value(c, curr_value);
+	} else {
+		curr_value = c->default_value;
+	}
 
 	spin_unlock_irqrestore(&pm_qos_lock, flags);
 
@@ -512,25 +516,25 @@ static int pm_qos_enabled_set(const char *arg, const struct kernel_param *kp)
 	}
 	spin_lock_irqsave(&pm_qos_lock, flags);
 	for (i = 1; i < PM_QOS_NUM_CLASSES; i++)
-		prev[i] = pm_qos_read_value(pm_qos_array[i]);
+		prev[i] = pm_qos_read_value(pm_qos_array[i]->constraints);
 	if (old && !pm_qos_enabled) {
 		/* got disabled */
 		for (i = 1; i < PM_QOS_NUM_CLASSES; i++) {
-			curr[i] = pm_qos_array[i]->default_value;
-			pm_qos_set_value(pm_qos_array[i], curr[i]);
+			curr[i] = pm_qos_array[i]->constraints->default_value;
+			pm_qos_set_value(pm_qos_array[i]->constraints, curr[i]);
 		}
 	} else if (!old && pm_qos_enabled) {
 		/* got enabled */
 		for (i = 1; i < PM_QOS_NUM_CLASSES; i++) {
-			curr[i] = pm_qos_get_value(pm_qos_array[i]);
-			pm_qos_set_value(pm_qos_array[i], curr[i]);
+			curr[i] = pm_qos_get_value(pm_qos_array[i]->constraints);
+			pm_qos_set_value(pm_qos_array[i]->constraints, curr[i]);
 		}
 	}
 	spin_unlock_irqrestore(&pm_qos_lock, flags);
 	for (i = 1; i < PM_QOS_NUM_CLASSES; i++)
 		if (prev[i] != curr[i])
 			blocking_notifier_call_chain(
-				pm_qos_array[i]->notifiers,
+				pm_qos_array[i]->constraints->notifiers,
 				(unsigned long)curr[i],
 				NULL);
 
@@ -546,6 +550,7 @@ static struct kernel_param_ops pm_qos_enabled_ops = {
 	.set = pm_qos_enabled_set,
 	.get = pm_qos_enabled_get,
 };
+
 module_param_cb(enable, &pm_qos_enabled_ops, &pm_qos_enabled, 0644);
 
 /**
