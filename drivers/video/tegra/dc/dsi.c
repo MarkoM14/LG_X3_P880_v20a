@@ -175,6 +175,7 @@ const u32 dsi_pkt_seq_reg[NUMOF_PKT_SEQ] = {
 	DSI_PKT_SEQ_5_HI,
 };
 
+#if 0
 const u32 dsi_pkt_seq_video_non_burst_syne[NUMOF_PKT_SEQ] = {
 	PKT_ID0(CMD_VS) | PKT_LEN0(0) | PKT_ID1(CMD_EOT) | PKT_LEN1(0) | PKT_LP,
 	0,
@@ -193,6 +194,24 @@ const u32 dsi_pkt_seq_video_non_burst_syne[NUMOF_PKT_SEQ] = {
 	PKT_ID3(CMD_BLNK) | PKT_LEN3(2) | PKT_ID4(CMD_RGB) | PKT_LEN4(3) |
 	PKT_ID5(CMD_BLNK) | PKT_LEN5(4),
 };
+#else
+const u32 dsi_pkt_seq_video_non_burst_syne[NUMOF_PKT_SEQ] = {
+	PKT_ID0(CMD_VS) | PKT_LEN0(0) | PKT_LP,
+	0,
+	PKT_ID0(CMD_VE) | PKT_LEN0(0) | PKT_LP,
+	0,
+	PKT_ID0(CMD_HS) | PKT_LEN0(0) | PKT_LP,
+	0,
+	PKT_ID0(CMD_HS) | PKT_LEN0(0) | PKT_ID1(CMD_BLNK) | PKT_LEN1(1) |
+	PKT_ID2(CMD_HE) | PKT_LEN2(0),
+	PKT_ID3(CMD_BLNK) | PKT_LEN3(2) | PKT_ID4(CMD_RGB) | PKT_LEN4(3),
+	PKT_ID0(CMD_HS) | PKT_LEN0(0) | PKT_LP,
+	0,
+	PKT_ID0(CMD_HS) | PKT_LEN0(0) | PKT_ID1(CMD_BLNK) | PKT_LEN1(1) |
+	PKT_ID2(CMD_HE) | PKT_LEN2(0),
+	PKT_ID3(CMD_BLNK) | PKT_LEN3(2) | PKT_ID4(CMD_RGB) | PKT_LEN4(3),
+};
+#endif
 
 const u32 dsi_pkt_seq_video_non_burst[NUMOF_PKT_SEQ] = {
 	PKT_ID0(CMD_VS) | PKT_LEN0(0) | PKT_ID1(CMD_EOT) | PKT_LEN1(0) | PKT_LP,
@@ -2807,7 +2826,7 @@ static void tegra_dsi_send_dc_frames(struct tegra_dc *dc,
 static void tegra_dc_dsi_enable(struct tegra_dc *dc)
 {
 	struct tegra_dc_dsi_data *dsi = tegra_dc_get_outdata(dc);
-	int err;
+	int err = 0;
 	u32 val;
 
 	mutex_lock(&dsi->lock);
@@ -2922,6 +2941,19 @@ static void tegra_dc_dsi_enable(struct tegra_dc *dc)
 
 		dsi->enabled = true;
 	}
+
+	//enable clk to mipi_cal block
+	val = readl(IO_ADDRESS(0x60006000 + 0x14));
+	val |= (1<<24);
+	writel(val, IO_ADDRESS(0x60006000 + 0x14));
+
+	//enable vclamp ref voltage
+	writel(0x1, IO_ADDRESS(0x700e3058));
+	writel(0x0, IO_ADDRESS(0x700e3000 + 0x60));
+
+	tegra_dsi_writel(dsi, 20, DSI_SOL_DELAY);
+
+	tegra_dsi_writel(dsi, 0x0, DSI_MAX_THRESHOLD);
 
 	if (dsi->status.driven == DSI_DRIVEN_MODE_DC)
 		tegra_dsi_start_dc_stream(dc, dsi);
