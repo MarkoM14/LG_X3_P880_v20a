@@ -372,13 +372,13 @@ struct tegra_dc_out {
 	bool			user_needs_vblank;
 	struct completion	user_vblank_comp;
 
-	int	(*enable)(void);
+	int	(*enable)(struct device *);
 	int	(*postpoweron)(void);
 	int	(*prepoweron)(void); /*wakeup time from LP0 ** Nvidia patch**/	
 	int	(*prepoweroff)(void); 
 	int	(*disable)(void);
 
-	int	(*hotplug_init)(void);
+	int	(*hotplug_init)(struct device *);
 	int	(*postsuspend)(void);
 };
 

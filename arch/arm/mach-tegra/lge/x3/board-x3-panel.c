@@ -163,7 +163,7 @@ static struct platform_device x3_backlight_device = {
 };
 
 static bool first_disp_boot = true;
-static int x3_panel_enable(void)
+static int x3_panel_enable(struct device *dev)
 {
 	if(!x3_hddisplay_on){
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
@@ -214,11 +214,11 @@ static int x3_panel_postsuspend(void)
 }
 
 
-static int x3_hdmi_vddio_enable(void)
+static int x3_hdmi_vddio_enable(struct device *dev)
 {
 	int ret;
 	if (!x3_hdmi_vddio) {
-		x3_hdmi_vddio = regulator_get(NULL, "avdd_hdmi");
+		x3_hdmi_vddio = regulator_get(dev, "avdd_hdmi");
 		if (IS_ERR_OR_NULL(x3_hdmi_vddio)) {
 			ret = PTR_ERR(x3_hdmi_vddio);
 			pr_err("hdmi: couldn't get regulator avdd_hdmi\n");
@@ -246,13 +246,13 @@ static int x3_hdmi_vddio_disable(void)
 	return 0;
 }
 
-static int x3_hdmi_enable(void)
+static int x3_hdmi_enable(struct device *dev)
 {
 	int ret;
 
 	printk("################HDMI LS Output Enable by Heebae##############\n");
 	if (!x3_hdmi_pll) {
-		x3_hdmi_pll = regulator_get(NULL, "avdd_hdmi_pll");
+		x3_hdmi_pll = regulator_get(dev, "avdd_hdmi_pll");
 		if (IS_ERR_OR_NULL(x3_hdmi_pll)) {
 			pr_err("hdmi: couldn't get regulator avdd_hdmi_pll\n");
 			x3_hdmi_pll = NULL;
