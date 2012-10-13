@@ -469,7 +469,7 @@ static struct tegra_dc_sd_settings x3_sd_settings = {
 			},
 		},
 	.sd_brightness = &sd_brightness,
-	.bl_device = &x3_backlight_device,
+	.bl_device_name = "pwm-backlight",
 };
 
 static struct tegra_fb_data x3_fb_data = {
@@ -611,13 +611,7 @@ static struct platform_device x3_nvmap_device = {
 
 static struct platform_device *x3_gfx_devices[] __initdata = {
 	&x3_nvmap_device,
-#if 0
-#if IS_EXTERNAL_PWM
-	&tegra_pwfm3_device,
-#else
-	&tegra_pwfm2_device,
-#endif
-#endif
+	&x3_backlight_device,
 };
 
 static struct platform_device *x3_bl_devices[]  = {
