@@ -300,6 +300,8 @@ struct tegra_dc_sd_settings {
 	bool use_vid_luma;
 	struct tegra_dc_sd_rgb coeff;
 
+	bool soft_clipping_correction;
+
 	struct tegra_dc_sd_fc fc;
 	struct tegra_dc_sd_blp blp;
 	u8 bltf[4][4][4];
