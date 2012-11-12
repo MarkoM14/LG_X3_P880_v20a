@@ -79,4 +79,4 @@ obj-$(CONFIG_CPWATCHER)		+= cpwatcher.o
 #LGE_IMC_RIL
 obj-y   += mtc_eta/
 obj-$(CONFIG_TEGRA_THROUGHPUT)	+= tegra-throughput.o
-
+obj-$(CONFIG_BLUEDROID_PM)      += bluedroid_pm.o
