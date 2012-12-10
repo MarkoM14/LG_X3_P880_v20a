@@ -529,6 +529,7 @@ static void tun_net_init(struct net_device *dev)
 		/* Ethernet TAP Device */
 		ether_setup(dev);
 		dev->priv_flags &= ~IFF_TX_SKB_SHARING;
+		dev->priv_flags |= IFF_LIVE_ADDR_CHANGE;
 
 		random_ether_addr(dev->dev_addr);
 
