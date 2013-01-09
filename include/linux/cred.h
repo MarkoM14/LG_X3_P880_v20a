@@ -17,6 +17,7 @@
 #include <linux/key.h>
 #include <linux/selinux.h>
 #include <linux/atomic.h>
+#include <linux/uidgid.h>
 
 struct user_struct;
 struct cred;
@@ -140,7 +141,6 @@ struct cred {
 					 * keys to */
 	struct key	*thread_keyring; /* keyring private to this thread */
 	struct key	*request_key_auth; /* assumed request_key authority */
-	struct thread_group_cred *tgcred; /* thread-group shared credentials */
 #endif
 #ifdef CONFIG_SECURITY
 	void		*security;	/* subjective LSM security */
