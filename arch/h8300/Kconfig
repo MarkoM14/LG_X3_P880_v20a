@@ -4,10 +4,7 @@ config H8300
 	select HAVE_IDE
 	select HAVE_GENERIC_HARDIRQS
 	select GENERIC_IRQ_SHOW
-
-config SYMBOL_PREFIX
-	string
-	default "_"
+	select HAVE_UNDERSCORE_SYMBOL_PREFIX
 
 config MMU
 	bool

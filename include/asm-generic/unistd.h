@@ -2,6 +2,7 @@
 #define _ASM_GENERIC_UNISTD_H
 
 #include <asm/bitsperlong.h>
+#include <linux/export.h>
 
 /*
  * This file contains the system call numbers, based on the
@@ -918,7 +919,9 @@ __SYSCALL(__NR_fork, sys_ni_syscall)
  * but it doesn't work on all toolchains, so we just do it by hand
  */
 #ifndef cond_syscall
-#define cond_syscall(x) asm(".weak\t" #x "\n\t.set\t" #x ",sys_ni_syscall")
+#define cond_syscall(x) asm(".weak\t" VMLINUX_SYMBOL_STR(x) "\n\t"	\
+			    ".set\t" VMLINUX_SYMBOL_STR(x) ","	\
+			    VMLINUX_SYMBOL_STR(sys_ni_syscall))
 #endif
 
 #endif /* __KERNEL__ */
