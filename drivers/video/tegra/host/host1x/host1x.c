@@ -38,6 +38,7 @@
 #include "nvhost_acm.h"
 #include "nvhost_channel.h"
 #include "nvhost_job.h"
+#include "nvhost_sync.h"
 
 #define DRIVER_NAME		"host1x"
 
@@ -128,6 +129,54 @@ static int nvhost_ioctl_ctrl_syncpt_waitex(struct nvhost_ctrl_userctx *ctx,
 	  args->timeout, args->value, err);
 
 	return err;
+}
+
+static int nvhost_ioctl_ctrl_sync_fence_create(struct nvhost_ctrl_userctx *ctx,
+	struct nvhost_ctrl_sync_fence_create_args *args)
+{
+#if CONFIG_TEGRA_GRHOST_SYNC
+	int err;
+	int i;
+	struct nvhost_ctrl_sync_fence_info *pts;
+	char name[32];
+	const char __user *args_name =
+		(const char __user *)(uintptr_t)args->name;
+	const void __user *args_pts =
+		(const void __user *)(uintptr_t)args->pts;
+
+	if (args_name) {
+		if (strncpy_from_user(name, args_name, sizeof(name)) < 0)
+			return -EFAULT;
+		name[sizeof(name) - 1] = '\0';
+	} else {
+		name[0] = '\0';
+	}
+
+	pts = kmalloc(sizeof(*pts) * args->num_pts, GFP_KERNEL);
+	if (!pts)
+		return -ENOMEM;
+
+
+	if (copy_from_user(pts, args_pts, sizeof(*pts) * args->num_pts)) {
+		err = -EFAULT;
+		goto out;
+	}
+
+	for (i = 0; i < args->num_pts; i++) {
+		if (pts[i].id >= nvhost_syncpt_nb_pts(&ctx->dev->syncpt)) {
+			err = -EINVAL;
+			goto out;
+		}
+	}
+
+	err = nvhost_sync_create_fence(&ctx->dev->syncpt, pts, args->num_pts,
+				       name, &args->fence_fd);
+out:
+	kfree(pts);
+	return err;
+#else
+	return -EINVAL;
+#endif
 }
 
 static int nvhost_ioctl_ctrl_module_mutex(struct nvhost_ctrl_userctx *ctx,
@@ -272,6 +321,9 @@ static long nvhost_ctrlctl(struct file *filp,
 		break;
 	case NVHOST_IOCTL_CTRL_SYNCPT_WAIT:
 		err = nvhost_ioctl_ctrl_syncpt_waitex(priv, (void *)buf);
+		break;
+	case NVHOST_IOCTL_CTRL_SYNC_FENCE_CREATE:
+		err = nvhost_ioctl_ctrl_sync_fence_create(priv, (void *)buf);
 		break;
 	case NVHOST_IOCTL_CTRL_MODULE_MUTEX:
 		err = nvhost_ioctl_ctrl_module_mutex(priv, (void *)buf);
