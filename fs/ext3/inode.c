@@ -39,6 +39,7 @@
 #include <linux/fiemap.h>
 #include <linux/namei.h>
 #include <trace/events/ext3.h>
+#include <linux/aio.h>
 #include "xattr.h"
 #include "acl.h"
 

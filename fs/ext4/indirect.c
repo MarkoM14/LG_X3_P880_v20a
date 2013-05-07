@@ -21,6 +21,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/aio.h>
 #include "ext4_jbd2.h"
 #include "truncate.h"
 
