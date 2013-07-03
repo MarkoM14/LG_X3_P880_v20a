@@ -108,7 +108,7 @@ extern pgprot_t		pgprot_kernel;
 #define pgprot_writecombine(prot) \
 	__pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE)
 
-#ifdef CONFIG_ARM_DMA_MEM_BUFFERABLE
+#if defined(CONFIG_ARM_DMA_MEM_BUFFERABLE) && !defined(CONFIG_OUTER_CACHE)
 #define pgprot_dmacoherent(prot) \
 	__pgprot_modify(prot, L_PTE_MT_MASK, L_PTE_MT_BUFFERABLE | L_PTE_XN)
 #define __HAVE_PHYS_MEM_ACCESS_PROT
