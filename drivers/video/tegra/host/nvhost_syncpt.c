@@ -459,7 +459,10 @@ int nvhost_syncpt_patch_wait(struct nvhost_syncpt *sp, void *patch_addr)
 struct nvhost_sync_timeline *nvhost_syncpt_timeline(struct nvhost_syncpt *sp,
 		int idx)
 {
-	return sp->timeline[idx];
+	if (idx != NVSYNCPT_INVALID)
+		return sp->timeline[idx];
+	else
+		return sp->timeline_invalid;
 }
 #endif
 
@@ -484,6 +487,42 @@ static ssize_t syncpt_max_show(struct kobject *kobj,
 	return snprintf(buf, PAGE_SIZE, "%u",
 			nvhost_syncpt_read_max(&syncpt_attr->host->syncpt,
 				syncpt_attr->id));
+}
+
+static int nvhost_syncpt_timeline_attr(struct nvhost_master *host,
+				       struct nvhost_syncpt *sp,
+				       struct nvhost_syncpt_attr *min,
+				       struct nvhost_syncpt_attr *max,
+				       int i)
+{
+	char name[MAX_SYNCPT_LENGTH];
+	struct kobject *kobj;
+
+	/* Create one directory per sync point */
+	snprintf(name, sizeof(name), "%d", i);
+	kobj = kobject_create_and_add(name, sp->kobj);
+	if (!kobj)
+		return -EIO;
+
+	min->id = i;
+	min->host = host;
+	min->attr.attr.name = min_name;
+	min->attr.attr.mode = S_IRUGO;
+	min->attr.show = syncpt_min_show;
+	sysfs_attr_init(&min->attr.attr);
+	if (sysfs_create_file(kobj, &min->attr.attr))
+		return -EIO;
+
+	max->id = i;
+	max->host = host;
+	max->attr.attr.name = max_name;
+	max->attr.attr.mode = S_IRUGO;
+	max->attr.show = syncpt_max_show;
+	sysfs_attr_init(&max->attr.attr);
+	if (sysfs_create_file(kobj, &max->attr.attr))
+		return -EIO;
+
+	return 0;
 }
 
 int nvhost_syncpt_init(struct nvhost_device *dev,
@@ -534,39 +573,14 @@ int nvhost_syncpt_init(struct nvhost_device *dev,
 
 	/* Fill in the attributes */
 	for (i = 0; i < nvhost_syncpt_nb_pts(sp); i++) {
-		char name[MAX_SYNCPT_LENGTH];
-		struct kobject *kobj;
 		struct nvhost_syncpt_attr *min = &sp->syncpt_attrs[i*2];
 		struct nvhost_syncpt_attr *max = &sp->syncpt_attrs[i*2+1];
 
-		/* Create one directory per sync point */
-		snprintf(name, sizeof(name), "%d", i);
-		kobj = kobject_create_and_add(name, sp->kobj);
-		if (!kobj) {
-			err = -EIO;
+		err = nvhost_syncpt_timeline_attr(host, sp, min, max, i);
+		if (err)
 			goto fail;
-		}
-
-		min->id = i;
-		min->host = host;
-		min->attr.attr.name = min_name;
-		min->attr.attr.mode = S_IRUGO;
-		min->attr.show = syncpt_min_show;
-		if (sysfs_create_file(kobj, &min->attr.attr)) {
-			err = -EIO;
-			goto fail;
-		}
-
-		max->id = i;
-		max->host = host;
-		max->attr.attr.name = max_name;
-		max->attr.attr.mode = S_IRUGO;
-		max->attr.show = syncpt_max_show;
-		if (sysfs_create_file(kobj, &max->attr.attr)) {
-			err = -EIO;
-			goto fail;
-		}
-#if CONFIG_TEGRA_GRHOST_SYNC
+		
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
 		sp->timeline[i] = nvhost_sync_timeline_create(sp, i);
 		if (!sp->timeline[i]) {
 			err = -ENOMEM;
@@ -574,6 +588,21 @@ int nvhost_syncpt_init(struct nvhost_device *dev,
 		}
 #endif
 	}
+
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
+	err = nvhost_syncpt_timeline_attr(host, sp, &sp->invalid_min_attr,
+					  &sp->invalid_max_attr,
+					  NVSYNCPT_INVALID);
+	if (err)
+		goto fail;
+
+	sp->timeline_invalid = nvhost_sync_timeline_create(sp,
+							   NVSYNCPT_INVALID);
+	if (!sp->timeline_invalid) {
+		err = -ENOMEM;
+		goto fail;
+	}
+#endif
 
 	return err;
 
@@ -594,6 +623,9 @@ static void nvhost_syncpt_deinit_timeline(struct nvhost_syncpt *sp)
 	}
 	kfree(sp->timeline);
 	sp->timeline = NULL;
+	if (sp->timeline_invalid)
+		sync_timeline_destroy(
+			(struct sync_timeline *)sp->timeline_invalid);
 #endif
 }
 
