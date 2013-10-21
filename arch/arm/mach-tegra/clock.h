@@ -259,6 +259,9 @@ int tegra_emc_set_rate(unsigned long rate);
 long tegra_emc_round_rate(unsigned long rate);
 struct clk *tegra_emc_predict_parent(unsigned long rate, u32 *div_value);
 void tegra_emc_timing_invalidate(void);
+
+int tegra_actmon_save(void);
+int tegra_actmon_restore(void);
 #ifdef CONFIG_ARCH_TEGRA_2x_SOC
 static inline int tegra_emc_backup(unsigned long rate)
 { return 0; }
