@@ -61,6 +61,8 @@ static unsigned long target_cpu_speed[CONFIG_NR_CPUS];
 static DEFINE_MUTEX(tegra_cpu_lock);
 static bool is_suspended;
 static int suspend_index;
+static struct pm_qos_request_list cpufreq_max_req;
+static struct pm_qos_request_list cpufreq_min_req;
 
 static bool force_policy_max;
 
@@ -674,23 +676,36 @@ static int tegra_pm_notify(struct notifier_block *nb, unsigned long event,
 	void *dummy)
 {
 	printk("%s start [%lu]\n", __func__, event);  //for debug
-	mutex_lock(&tegra_cpu_lock);
 	if (event == PM_SUSPEND_PREPARE) {
+		pm_qos_update_request(&cpufreq_min_req,
+			freq_table[suspend_index].frequency);
+		pm_qos_update_request(&cpufreq_max_req,
+			freq_table[suspend_index].frequency);
+
+		mutex_lock(&tegra_cpu_lock);
 		is_suspended = true;
 		pr_info("Tegra cpufreq suspend: setting frequency to %u kHz\n",
 			freq_table[suspend_index].frequency);
 		tegra_update_cpu_speed(freq_table[suspend_index].frequency);
 		tegra_auto_hotplug_governor(
 			freq_table[suspend_index].frequency, true);
+		mutex_unlock(&tegra_cpu_lock);
 	} else if (event == PM_POST_SUSPEND) {
 		unsigned int freq;
+
+		mutex_lock(&tegra_cpu_lock);
 		is_suspended = false;
 		tegra_cpu_edp_init(true);
 		tegra_cpu_set_speed_cap_locked(&freq);
 		pr_info("Tegra cpufreq resume: restoring frequency to %d kHz\n",
 			freq);
+		mutex_unlock(&tegra_cpu_lock);
+
+		pm_qos_update_request(&cpufreq_max_req,
+			PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
+		pm_qos_update_request(&cpufreq_min_req,
+			PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
 	}
-	mutex_unlock(&tegra_cpu_lock);
 
 	return NOTIFY_OK;
 }
@@ -855,6 +870,11 @@ static int __init tegra_cpufreq_init(void)
 	mutex_lock(&tegra_cpu_lock);
 	tegra_cpu_edp_init(false);
 	mutex_unlock(&tegra_cpu_lock);
+
+	pm_qos_add_request(&cpufreq_max_req, PM_QOS_CPU_FREQ_MAX,
+		PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
+	pm_qos_add_request(&cpufreq_min_req, PM_QOS_CPU_FREQ_MIN,
+		PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
 
 	ret = cpufreq_register_notifier(
 		&tegra_cpufreq_policy_nb, CPUFREQ_POLICY_NOTIFIER);
