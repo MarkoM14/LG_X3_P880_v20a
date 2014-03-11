@@ -176,17 +176,20 @@ static unsigned int core_bias; //Dummy variable exposed to userspace
 
 static unsigned int rt_profile_default[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
-	5,  9, 10, UINT_MAX
+//	5,  9, 10, UINT_MAX
+	8, 10, 12, UINT_MAX
 };
 
 static unsigned int rt_profile_1[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
-	8,  9, 10, UINT_MAX
+//	8,  9, 10, UINT_MAX
+	10, 12, 14, UINT_MAX
 };
 
 static unsigned int rt_profile_2[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
-	5,  13, 14, UINT_MAX
+//	5,  13, 14, UINT_MAX
+	12, 14, 16, UINT_MAX
 };
 
 static unsigned int rt_profile_disable[] = {
@@ -460,7 +463,7 @@ static int balanced_start(void)
 	INIT_DELAYED_WORK(&balanced_work, balanced_work_func);
 
 	up_delay = msecs_to_jiffies(100);
-	down_delay = msecs_to_jiffies(500);
+	down_delay = msecs_to_jiffies(1000);
 
 	table = cpufreq_frequency_get_table(0);
 	for (count = 0; table[count].frequency != CPUFREQ_TABLE_END; count++);
