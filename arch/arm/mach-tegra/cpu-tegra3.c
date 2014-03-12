@@ -210,19 +210,20 @@ static unsigned int rt_profile_sel;
 
 static unsigned int rt_profile_default[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
-/*                                                                              */
-	10,  11, 12, UINT_MAX
 //	5,  9, 10, UINT_MAX
+	10, 11, 12, UINT_MAX
 };
 
 static unsigned int rt_profile_1[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
-	8,  9, 10, UINT_MAX
+//	8,  9, 10, UINT_MAX
+	10, 12, 14, UINT_MAX
 };
 
 static unsigned int rt_profile_2[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
-	5,  13, 14, UINT_MAX
+//	5,  13, 14, UINT_MAX
+	12, 14, 16, UINT_MAX
 };
 
 static unsigned int rt_profile_off[] = { /* disables runable thread */

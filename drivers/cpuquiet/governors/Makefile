@@ -1,1 +1,6 @@
-obj-y += userspace.o balanced.o runnable_threads.o
+GCOV_PROFILE := y
+
+obj-$(CONFIG_CPUQUIET_GOVERNOR_USERSPACE) += userspace.o
+obj-$(CONFIG_CPUQUIET_GOVERNOR_BALANCED) += balanced.o
+obj-$(CONFIG_CPUQUIET_GOVERNOR_RUNNABLE) += runnable_threads.o
+
