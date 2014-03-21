@@ -21,6 +21,7 @@ config MACH_X3
 	depends on ARCH_TEGRA
 	select MACH_LGE
 	select MACH_HAS_SND_SOC_TEGRA_MAX98088 if SND_SOC
+	select TEGRA_CPU_FREQ_GOVERNOR_KERNEL_START
 	bool "TEGRA X3"
 	help
 	  Support for the LGE X3   	  
