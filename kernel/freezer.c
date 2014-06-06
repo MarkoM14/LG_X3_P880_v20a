@@ -103,19 +103,12 @@ bool freeze_task(struct task_struct *p, bool sig_only)
 			return false;
 	}
 
-	if (should_send_signal(p)) {
+	if (should_send_signal(p))
 		fake_signal_wake_up(p);
-		/*
-		 * fake_signal_wake_up() goes through p's scheduler
-		 * lock and guarantees that TASK_STOPPED/TRACED ->
-		 * TASK_RUNNING transition can't race with task state
-		 * testing in try_to_freeze_tasks().
-		 */
-	} else if (sig_only) {
+	else if (sig_only)
 		return false;
-	} else {
+	else
 		wake_up_state(p, TASK_INTERRUPTIBLE);
-	}
 
 	return true;
 }
