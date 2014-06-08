@@ -19,6 +19,10 @@
 #include <linux/rtc.h>
 #include <linux/mfd/max77663-core.h>
 
+/*LGE
+#include "../../arch/arm/mach-tegra/lge/x3/include/lge/board-x3-nv.h"
+*/
+
 /* RTC Registers */
 #define MAX77663_RTC_IRQ		0x00
 #define MAX77663_RTC_IRQ_MASK		0x01
@@ -26,6 +30,7 @@
 #define MAX77663_RTC_CTRL		0x03
 #define MAX77663_RTC_UPDATE0		0x04
 #define MAX77663_RTC_UPDATE1		0x05
+/*LGE #define MAX77663_RTC_SMPL		0x06	*/
 #define MAX77663_RTC_SEC		0x07
 #define MAX77663_RTC_MIN		0x08
 #define MAX77663_RTC_HOUR		0x09
@@ -60,6 +65,14 @@
 #define WB_UPDATE_FLAG_MASK		(1 << 0)
 #define RB_UPDATE_FLAG_MASK		(1 << 1)
 
+/*LGE
+#define	SMPL_TIME_0_5S		(0b00 << 2)
+#define	SMPL_TIME_1_0S		(0b01 << 2)
+#define	SMPL_TIME_1_5S		(0b10 << 2)
+#define	SMPL_TIME_2_0S		(0b11 << 2)
+
+#define	SMPL_ENABLE		(1 << 7)
+//*/
 #define SEC_MASK			0x7F
 #define MIN_MASK			0x7F
 #define HOUR_MASK			0x3F
@@ -99,6 +112,8 @@ struct max77663_rtc {
 	u8 irq_mask;
 	bool shutdown_ongoing;
 };
+
+/*LGE  static u8 max77663_smpl_status = 0; */
 
 static inline struct device *_to_parent(struct max77663_rtc *rtc)
 {
@@ -494,6 +509,46 @@ static const struct rtc_class_ops max77663_rtc_ops = {
 	.alarm_irq_enable = max77663_rtc_alarm_irq_enable,
 };
 
+/*LGE
+static void max77663_rtc_enable_smpl(struct max77663_rtc *rtc, u8 enable)
+{
+	u8 val;
+	int ret;
+	u8 irq_status;
+	struct device *parent = _to_parent(rtc);
+	// Configure SMPL Enable 
+	//default disable
+	ret = max77663_rtc_update_buffer(rtc, 0);	//[geayoung.baek:20120109] append to rtc update buffer
+
+	if (ret < 0) {
+		dev_err(rtc->dev, "rtc_irq: Failed to get rtc update buffer\n");
+		//return ret;
+		return;
+	}
+
+	ret = max77663_read(parent, MAX77663_RTC_IRQ, &irq_status, 1, 1);	//                                                                 
+	dev_info(rtc->dev, "MAX77663_RTC_IRQ [0x%x]\n", irq_status);
+
+	val = 0x00; //disable
+	ret = max77663_rtc_write(rtc, MAX77663_RTC_SMPL, &val, 1, 1);
+	if (ret < 0) {
+		dev_err(rtc->dev, "preinit: Failed to set rtc control\n");
+		//return ret;
+		return;
+	}
+
+	if (enable) //enable
+	{
+		val = SMPL_ENABLE | SMPL_TIME_0_5S;
+		ret = max77663_rtc_write(rtc, MAX77663_RTC_SMPL, &val, 1, 1);
+		if (ret < 0) {
+			dev_err(rtc->dev, "preinit: Failed to set rtc control\n");
+			//return ret;
+			return;
+		}
+	}
+}
+*/
 static int max77663_rtc_preinit(struct max77663_rtc *rtc)
 {
 	struct device *parent = _to_parent(rtc);
@@ -501,6 +556,29 @@ static int max77663_rtc_preinit(struct max77663_rtc *rtc)
 	int ret;
 
 	/* Mask all interrupts */
+/*LGE
+#ifdef CONFIG_MFD_MAX77663_SMPL
+	u8 smpl_enable = 0;
+
+#if 1
+	smpl_enable = max77663_smpl_status;
+#else
+	lge_nvdata_read(LGE_NVDATA_SMPL_EN_OFFSET, &smpl_enable,1);
+#endif
+#ifdef CONFIG_MFD_MAX77663_SMPL_DEFAULT_ENABLE
+	if(!smpl_enable)
+#else
+	if(smpl_enable)
+#endif
+	{
+		rtc->irq_mask = 0xF7;
+	}
+	else
+	{
+		rtc->irq_mask = 0xFF;
+	}
+#endif
+//*/
 	rtc->irq_mask = 0xFF;
 	ret = max77663_rtc_write(rtc, MAX77663_RTC_IRQ_MASK, &rtc->irq_mask, 1,
 				 0);
@@ -516,7 +594,15 @@ static int max77663_rtc_preinit(struct max77663_rtc *rtc)
 		dev_err(rtc->dev, "preinit: Failed to set rtc control\n");
 		return ret;
 	}
-
+/*LGE
+#ifdef CONFIG_MFD_MAX77663_SMPL
+#ifdef CONFIG_MFD_MAX77663_SMPL_DEFAULT_ENABLE
+	max77663_rtc_enable_smpl(rtc, !smpl_enable);
+#else
+	max77663_rtc_enable_smpl(rtc, smpl_enable);
+#endif
+#endif
+//*/
 	/* It should be disabled alarm wakeup to wakeup from sleep
 	 * by EN1 input signal */
 	ret = max77663_set_bits(parent, MAX77663_REG_ONOFF_CFG2,
@@ -528,6 +614,80 @@ static int max77663_rtc_preinit(struct max77663_rtc *rtc)
 
 	return 0;
 }
+
+/*LGE
+static ssize_t max77663_rtc_show_smplcount(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char smplcount = 0;
+	lge_nvdata_read(LGE_NVDATA_SMPL_COUNT_OFFSET, &smplcount,1);
+	return sprintf(buf, "%d\n", smplcount);
+}
+
+static ssize_t max77663_rtc_store_smplcount(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned long val = simple_strtoul(buf, NULL, 10);
+
+	if(val == 0)
+	{
+		char smplcount = 0;
+		lge_nvdata_write(LGE_NVDATA_SMPL_COUNT_OFFSET, &smplcount,1);		
+	}
+
+	return count;
+}
+
+static DEVICE_ATTR(smplcount, 0660, max77663_rtc_show_smplcount,  max77663_rtc_store_smplcount);
+
+
+static ssize_t max77663_rtc_show_enablesmpl(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char smplenable = 0;
+	lge_nvdata_read(LGE_NVDATA_SMPL_EN_OFFSET, &smplenable,1);
+
+	if(smplenable == 0)	//enable
+	{
+		smplenable = 1;
+	}
+	else  			//disable
+	{
+		smplenable = 0;
+	}
+
+	return sprintf(buf, "%d\n", smplenable);
+}
+
+static ssize_t max77663_rtc_store_enablesmpl(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct max77663_rtc *rtc = dev_get_drvdata(dev);
+	unsigned long val = simple_strtoul(buf, NULL, 10);
+	char smplenable = 0;
+
+	if(val == 0)	//disable
+	{
+		smplenable = 1;
+	}
+	else		//enable
+	{
+		smplenable = 0;
+	}
+
+#ifdef CONFIG_MFD_MAX77663_SMPL_DEFAULT_ENABLE
+	max77663_rtc_enable_smpl(rtc, !smplenable);
+#else
+	max77663_rtc_enable_smpl(rtc, smplenable);
+#endif
+
+	lge_nvdata_write(LGE_NVDATA_SMPL_EN_OFFSET, &smplenable,1);		
+
+	return count;
+}
+
+static DEVICE_ATTR(enablesmpl, 0660, max77663_rtc_show_enablesmpl,  max77663_rtc_store_enablesmpl);
+//*/
 
 static int max77663_rtc_probe(struct platform_device *pdev)
 {
@@ -581,7 +741,21 @@ static int max77663_rtc_probe(struct platform_device *pdev)
 		device_init_wakeup(rtc->dev, 1);
 		enable_irq_wake(rtc->irq);
 	}
+/*LGE
+	ret = device_create_file(rtc->dev, &dev_attr_smplcount);
+	if (ret < 0) {
+		dev_err(rtc->dev,
+			 "%s: failed to add smplcount sysfs: %d\n",
+			 __func__, ret);	
+	}
 
+	ret = device_create_file(rtc->dev, &dev_attr_enablesmpl);
+	if (ret < 0) {
+		dev_err(rtc->dev,
+			 "%s: failed to add enablesmpl sysfs: %d\n",
+			 __func__, ret);	
+	}
+//*/
 	return 0;
 
 out_kfree:
@@ -615,6 +789,17 @@ static void max77663_rtc_shutdown(struct platform_device *pdev)
 	max77663_rtc_write(rtc, MAX77663_RTC_ALARM_SEC1, buf, sizeof(buf), 1);
 	max77663_rtc_alarm_irq_enable(&pdev->dev, 0);
 }
+
+/*LGE
+static int __init max77663_rtc_smpl_enable(char *str)
+{
+	sscanf(str,"%hhu ",&max77663_smpl_status);
+
+	printk("%s [%d]\n", __func__, max77663_smpl_status);
+	return 1;
+}
+__setup("smplenable=", max77663_rtc_smpl_enable);
+//*/
 
 static struct platform_driver max77663_rtc_driver = {
 	.probe = max77663_rtc_probe,

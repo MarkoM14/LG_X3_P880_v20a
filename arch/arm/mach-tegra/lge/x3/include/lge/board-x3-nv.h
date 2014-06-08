@@ -54,8 +54,9 @@ typedef enum{
 
     /*Block 5 : 2560 */
     LGE_NVDATA_MUIC_RETENTION_OFFSET = 2560, // used size 1 byte
-    LGE_NVDATA_SMPL_EN_OFFSET   = 2570, // used size 1 byte
-    LGE_NVDATA_SMPL_COUNT_OFFSET    = 2572, // used size 4 byte
+//Removed smpl  from drivers/rtc/rtc-max77663
+//    LGE_NVDATA_SMPL_EN_OFFSET   = 2570, // used size 1 byte
+//    LGE_NVDATA_SMPL_COUNT_OFFSET    = 2572, // used size 4 byte
     LGE_NVDATA_WEB_DOWNLOAD_OFFSET1 = 2580, // used size 1 byte
     LGE_NVDATA_WEB_DOWNLOAD_OFFSET2 = 2582,  // used size 1 byte
     LGE_NVDATA_CHARGING_TEMP_OFFSET = 2600, // used size 1 byte
