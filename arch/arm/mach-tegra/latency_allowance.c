@@ -41,8 +41,8 @@
 static int default_set_la(enum tegra_la_id id, unsigned int bw_mbps);
 
 static struct la_chip_specific cs;
-module_param_named(disable_la, cs.disable_la, bool, 0644);
-module_param_named(disable_ptsa, cs.disable_ptsa, bool, 0644);
+module_param_named(disable_la, cs.disable_la, bool, S_IRUGO | S_IWUSR);
+module_param_named(disable_ptsa, cs.disable_ptsa, bool, S_IRUGO | S_IWUSR);
 
 static void init_chip_specific(void)
 {
@@ -60,9 +60,11 @@ static void init_chip_specific(void)
 	cid = tegra_get_chipid();
 
 	switch (cid) {
+#if defined(CONFIG_ARCH_TEGRA_3x_SOC)
 	case TEGRA_CHIPID_TEGRA3:
 		tegra_la_get_t3_specific(&cs);
 		break;
+#endif
 #if defined(CONFIG_ARCH_TEGRA_11x_SOC)
 	case TEGRA_CHIPID_TEGRA11:
 		tegra_la_get_t11x_specific(&cs);
