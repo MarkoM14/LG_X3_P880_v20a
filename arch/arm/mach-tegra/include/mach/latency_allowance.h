@@ -1,7 +1,7 @@
 /*
  * arch/arm/mach-tegra/include/mach/latency_allowance.h
  *
- * Copyright (C) 2011-2012, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (C) 2011-2013, NVIDIA CORPORATION. All rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -59,6 +59,7 @@ enum tegra_la_id {
 	TEGRA_LA_FDCDRD,
 	TEGRA_LA_IDXSRD,
 	TEGRA_LA_TEXSRD,
+	TEGRA_LA_TEXL2SRD = TEGRA_LA_TEXSRD,	/* T11x, T14x specific */
 	TEGRA_LA_FDCDWR,
 	TEGRA_LA_FDCDRD2,
 	TEGRA_LA_IDXSRD2,			/* T30 specific */
@@ -85,37 +86,37 @@ enum tegra_la_id {
 	TEGRA_LA_VI_WV,
 	TEGRA_LA_VI_WY,
 
+	TEGRA_LA_MSENCSRD,			/* T11x, T14x specific */
+	TEGRA_LA_MSENCSWR,			/* T11x, T14x specific */
+	TEGRA_LA_XUSB_HOSTR,			/* T11x specific */
+	TEGRA_LA_XUSB_HOSTW,			/* T11x specific */
+	TEGRA_LA_XUSB_DEVR,			/* T11x specific */
+	TEGRA_LA_XUSB_DEVW,			/* T11x specific */
+	TEGRA_LA_FDCDRD3,			/* T11x specific */
+	TEGRA_LA_FDCDRD4,			/* T11x specific */
+	TEGRA_LA_FDCDWR3,			/* T11x specific */
+	TEGRA_LA_FDCDWR4,			/* T11x specific */
+	TEGRA_LA_EMUCIFR,			/* T11x, T14x specific */
+	TEGRA_LA_EMUCIFW,			/* T11x, T14x specific */
+	TEGRA_LA_TSECSRD,			/* T11x, T14x specific */
+	TEGRA_LA_TSECSWR,			/* T11x, T14x specific */
+
+	TEGRA_LA_DISPLAY_T,			/* T14x specific */
+	TEGRA_LA_VI_W,				/* T14x specific */
+	TEGRA_LA_ISP_RA,			/* T14x specific */
+	TEGRA_LA_ISP_WA,			/* T14x specific */
+	TEGRA_LA_ISP_WB,			/* T14x specific */
+	TEGRA_LA_BBCR,				/* T14x specific */
+	TEGRA_LA_BBCW,				/* T14x specific */
+	TEGRA_LA_BBCLLR,			/* T14x specific */
+	TEGRA_LA_DISPLAYD,			/* T14x specific */
 	TEGRA_LA_MAX_ID
 };
 
-#if defined(CONFIG_ARCH_TEGRA_2x_SOC) || defined(CONFIG_TEGRA_FPGA_PLATFORM)
-static inline int tegra_set_latency_allowance(enum tegra_la_id id,
-						int bandwidth_in_mbps)
-{
-	return 0;
-}
-
-static inline int tegra_enable_latency_scaling(enum tegra_la_id id,
-						unsigned int threshold_low,
-						unsigned int threshold_mid,
-						unsigned int threshold_high)
-{
-	return 0;
-}
-
-static inline void tegra_disable_latency_scaling(enum tegra_la_id id)
-{
-	return;
-}
-
-static inline void tegra_latency_allowance_update_tick_length(
-						unsigned int new_ns_per_tick)
-{
-	return;
-}
-#else
 int tegra_set_latency_allowance(enum tegra_la_id id,
 				unsigned int bandwidth_in_mbps);
+
+void tegra_latency_allowance_update_tick_length(unsigned int new_ns_per_tick);
 
 int tegra_enable_latency_scaling(enum tegra_la_id id,
 				    unsigned int threshold_low,
@@ -123,7 +124,5 @@ int tegra_enable_latency_scaling(enum tegra_la_id id,
 				    unsigned int threshold_high);
 
 void tegra_disable_latency_scaling(enum tegra_la_id id);
-void tegra_latency_allowance_update_tick_length(unsigned int new_ns_per_tick);
-#endif
 
 #endif /* _MACH_TEGRA_LATENCY_ALLOWANCE_H_ */
