@@ -27,7 +27,6 @@ extern struct list_head cpuquiet_governors;
 int cpuquiet_add_class_sysfs(struct sysdev_class *cls);
 struct cpuquiet_governor *cpuquiet_find_governor(const char *str);
 int cpuquiet_switch_governor(struct cpuquiet_governor *gov);
-struct cpuquiet_governor *cpuquiet_get_first_governor(void);
 struct cpuquiet_driver *cpuquiet_get_driver(void);
 void cpuquiet_add_dev(struct sys_device *sys_dev, unsigned int cpu);
 void cpuquiet_remove_dev(unsigned int cpu);

@@ -40,8 +40,8 @@
 #include "clock.h"
 
 #define INITIAL_STATE		TEGRA_CPQ_ENABLED
-#define UP_DELAY_MS		140	//70
-#define DOWN_DELAY_MS		800	//2000
+#define UP_DELAY_MS		100	//70
+#define DOWN_DELAY_MS		400	//2000
 #define HOTPLUG_DELAY_MS	100
 
 static struct mutex *tegra_cpu_lock;
@@ -91,7 +91,7 @@ enum {
 	TEGRA_CPQ_LP,
 };
 
-static int cpq_target_state;
+static int cpq_target_state = INITIAL_STATE;
 static int cpq_target_cluster_state;
 
 static int cpq_state;
@@ -839,7 +839,6 @@ int __cpuinit tegra_auto_hotplug_init(struct mutex *cpulock)
 	if (!cpuquiet_wq)
 		return -ENOMEM;
 
-	INIT_WORK(&cpuquiet_work, tegra_cpuquiet_work_func);
 	init_timer(&updown_timer);
 	updown_timer.function = updown_handler;
 
@@ -856,6 +855,8 @@ int __cpuinit tegra_auto_hotplug_init(struct mutex *cpulock)
 	cpq_state = INITIAL_STATE;
 	enable = cpq_state == TEGRA_CPQ_DISABLED ? false : true;
 	hp_init_stats();
+	
+	INIT_WORK(&cpuquiet_work, tegra_cpuquiet_work_func);
 
 	pr_info("Tegra cpuquiet initialized: %s\n",
 		(cpq_state == TEGRA_CPQ_DISABLED) ? "disabled" : "enabled");

@@ -25,16 +25,6 @@
 LIST_HEAD(cpuquiet_governors);
 struct cpuquiet_governor *cpuquiet_curr_governor;
 
-struct cpuquiet_governor *cpuquiet_get_first_governor(void)
-{
-	if (!list_empty(&cpuquiet_governors))
-		return list_entry(cpuquiet_governors.next,
-					struct cpuquiet_governor,
-					governor_list);
-	else
-		return NULL;
-}
-
 struct cpuquiet_governor *cpuquiet_find_governor(const char *str)
 {
 	struct cpuquiet_governor *gov;
@@ -82,7 +72,19 @@ int cpuquiet_register_governor(struct cpuquiet_governor *gov)
 		ret = 0;
 		list_add_tail(&gov->governor_list, &cpuquiet_governors);
 		if (!cpuquiet_curr_governor && cpuquiet_get_driver())
-			cpuquiet_switch_governor(gov);
+//			cpuquiet_switch_governor(gov);
+#ifdef CONFIG_CPUQUIET_DEFAULT_GOV_USERSPACE
+			cpuquiet_switch_governor
+				(cpuquiet_find_governor("userspace"));
+#endif
+#ifdef CONFIG_CPUQUIET_DEFAULT_GOV_BALANCED
+			cpuquiet_switch_governor
+				(cpuquiet_find_governor("balanced"));
+#endif
+#ifdef CONFIG_CPUQUIET_DEFAULT_GOV_RUNNABLE
+			cpuquiet_switch_governor
+				(cpuquiet_find_governor("runnable"));
+#endif
 	}
 	mutex_unlock(&cpuquiet_lock);
 
