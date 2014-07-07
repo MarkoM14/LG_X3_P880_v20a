@@ -584,7 +584,7 @@ static int tegra_dvfs_suspend(void)
 static int tegra_dvfs_pm_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
-	printk("%s start [%d]\n", __func__, event);  //for debug
+	printk("%s start [%lu]\n", __func__, event);  //for debug
 
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
