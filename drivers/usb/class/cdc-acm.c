@@ -508,7 +508,7 @@ static int acm_tty_open(struct tty_struct *tty, struct file *filp)
 	if (usb_autopm_get_interface(acm->control) < 0)
 		goto early_bail;
 	else
-		acm->control->needs_remote_wakeup = 1;
+		acm->control->needs_remote_wakeup = 0; //modem doesn't go L2 when awake
 
 	mutex_lock(&acm->mutex);
 	if (acm->port.count++) {
