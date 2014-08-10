@@ -28,43 +28,31 @@
 #include <mach/irqs.h>
 #include <mach/iomap.h>
 #include <mach/sdhci.h>
-#include <mach/io_dpd.h>
 
 #include <mach-tegra/gpio-names.h>
 #include <mach-tegra/board.h>
 #include <lge/board-x3.h>
-#include "../../../include/asm/hw_irq.h" //                                                   
+#include "../../../include/asm/hw_irq.h"
 
-#ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
+#ifdef CONFIG_DHD_USE_STATIC_BUF
 #include <linux/skbuff.h>
 #include <linux/wlan_plat.h>
 #endif
 
-#include "LG_CC_Table.h"
-
-//                                                         
 #define X3_WLAN_RST	TEGRA_GPIO_PV3
-//                                                       
 #define X3_WLAN_WOW	TEGRA_GPIO_PU6
 #define X3_SD_CD TEGRA_GPIO_PW5
 #define X3_SD_WP TEGRA_GPIO_PT3
-
-#define NV_WIFI_MACADDR "/data/misc/wifi/config_mac"
-#define ETHER_ADDR_LEN 6
 
 static void (*wifi_status_cb)(int card_present, void *dev_id);
 static void *wifi_status_cb_devid;
 static int x3_wifi_status_register(void (*callback)(int , void *), void *);
 
-//                                                         
 static int x3_wifi_reset(int on);
 static int x3_wifi_power(int on);
 static int x3_wifi_set_carddetect(int val);
-static int x3_wifi_get_mac_addr(unsigned char *buf);
-static void * x3_wifi_get_country_code(char *ccode);
 
-
-#ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
+#ifdef CONFIG_DHD_USE_STATIC_BUF
 #define WLAN_STATIC_SCAN_BUF0		5
 #define WLAN_STATIC_SCAN_BUF1		6
 #define PREALLOC_WLAN_SEC_NUM		4
@@ -168,15 +156,13 @@ static int x3_init_wlan_mem(void)
 
 	return -ENOMEM;
 }
-#endif /* CONFIG_BROADCOM_WIFI_RESERVED_MEM */
+#endif /* CONFIG_DHD_USE_STATIC_BUF */
 
 static struct wifi_platform_data x3_wifi_control = {
 	.set_power      = x3_wifi_power,
 	.set_reset      = x3_wifi_reset,
 	.set_carddetect = x3_wifi_set_carddetect,
-	.get_mac_addr   = x3_wifi_get_mac_addr,
-	.get_country_code = x3_wifi_get_country_code,
-#if defined(CONFIG_BROADCOM_WIFI_RESERVED_MEM)
+#if defined(CONFIG_DHD_USE_STATIC_BUF)
 	.mem_prealloc   = x3_wifi_mem_prealloc,
 #endif
 };
@@ -186,7 +172,6 @@ static struct resource wifi_resource[] = {
 		.name	= "bcmdhd_wlan_irq",
 		.start	= TEGRA_GPIO_TO_IRQ(X3_WLAN_WOW),
 		.end	= TEGRA_GPIO_TO_IRQ(X3_WLAN_WOW),
-//for HW_OOB		.flags	= IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE | IORESOURCE_IRQ_SHAREABLE,
 		.flags	= IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHLEVEL | IORESOURCE_IRQ_SHAREABLE,
 	},
 };
@@ -200,7 +185,6 @@ static struct platform_device x3_wifi_device = {
 		.platform_data = &x3_wifi_control,
 	},
 };
-//                                                       
 
 static struct resource sdhci_resource0[] = {
 	[0] = {
@@ -253,11 +237,11 @@ static struct embedded_sdio_data embedded_sdio_data0 = {
 	},
 	.cis  = {
 		.vendor         = 0x02d0,
-		.device         = 0x4330,	//                                                 
+		.device         = 0x4330,
 	},
 };
 #endif
-//#define NVIDIA_RECOMMAND
+
 static struct tegra_sdhci_platform_data tegra_sdhci_platform_data0 = {
 	.mmc_data = {
 		.register_status_notify	= x3_wifi_status_register,
@@ -265,7 +249,7 @@ static struct tegra_sdhci_platform_data tegra_sdhci_platform_data0 = {
 		.embedded_sdio = &embedded_sdio_data0,
 #endif
 		.built_in = 0,
-		.ocr_mask = MMC_OCR_1V8_MASK, //                                          
+		.ocr_mask = MMC_OCR_1V8_MASK,
 	},
 #ifndef CONFIG_MMC_EMBEDDED_SDIO
 	.pm_flags = MMC_PM_KEEP_POWER,
@@ -298,6 +282,7 @@ static struct tegra_sdhci_platform_data tegra_sdhci_platform_data3 = {
 	.ddr_clk_limit = 41000000,
 	.mmc_data = {
 		.built_in = 1,
+		.ocr_mask = MMC_OCR_1V8_MASK,
 	}
 };
 
@@ -342,7 +327,6 @@ static int x3_wifi_status_register(
 	return 0;
 }
 
-//                                                         
 static int x3_wifi_set_carddetect(int val)
 {
 	pr_debug("%s: %d\n", __func__, val);
@@ -353,194 +337,11 @@ static int x3_wifi_set_carddetect(int val)
 	return 0;
 }
 
-
-
-void init_mac(char *buf)
-{
-	buf[0] = 0x00;
-	buf[1] = 0x00;
-	buf[2] = 0x00;
-	buf[3] = 0x00;
-	buf[4] = 0x00;
-	buf[5] = 0x00;
-}
-
-static unsigned int util_hex2num(char c)
-{
-	if (c >= '0' && c <= '9')
-		return c - '0';
-	if (c >= 'a' && c <= 'f')
-		return c - 'a' + 10;
-	if (c >= 'A' && c <= 'F')
-		return c - 'A' + 10;
-	return -1;
-}
-static int util_ascii_to_hex(char* keystr, unsigned int keystrlen, char* dst)
-{
-	#define TEMP_BUF_LEN 10
-	char temp_buf[TEMP_BUF_LEN] = {0,};
-	unsigned int hex_len = keystrlen;
-	unsigned int i1 = 0, i2 = 0, num1, num2;
-
-	if (!keystr) {
-		return -1;
-	}
-
-	if (hex_len > (TEMP_BUF_LEN*2)) {
-		printk(KERN_INFO "keystrlen is too long %u\n", keystrlen);
-		return -1;
-	}
-
-	while (hex_len)
-	{
-		num1 = util_hex2num(keystr[i1++]);
-		num2 = util_hex2num(keystr[i1++]);
-		if (num1 < 0 || num2 < 0)
-		{
-			// error
-			return -1;
-		}
-		num1 <<= 4;
-		temp_buf[i2++] = num1 | num2;
-		hex_len -= 2;
-	}
-
-	memcpy(dst, temp_buf, keystrlen/2);
-	return keystrlen/2;
-}
-
-static bool check_nvmac_is_valid(char* nvmac)
-{
-	bool ret = true;
-	const char init_val[3][ETHER_ADDR_LEN] = {
-		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
-		{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-		{0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
-	};
-
-	if (!nvmac
-		|| !memcmp(nvmac, init_val[0], ETHER_ADDR_LEN)
-		|| !memcmp(nvmac, init_val[1], ETHER_ADDR_LEN)
-		|| !memcmp(nvmac, init_val[2], ETHER_ADDR_LEN)) {
-		ret = false;
-	}
-	return ret;
-}
-
-static unsigned char mymac[ETHER_ADDR_LEN] = {0,};
-static int x3_wifi_get_mac_addr(unsigned char *buf)
-{
-#if 1
-	int ret = 0;
-	int rdlen;
-
-	char addr_tmp[ETHER_ADDR_LEN*2 + 1] = {0,};		// +1 for NULL
-	mm_segment_t old_fs;
-	struct kstat stat;
-	struct file *fp;	
-
-	init_mac(buf);
-/*
-	if(check_nvmac_is_valid(mymac))
-	{
-		memcpy( buf,mymac, ETHER_ADDR_LEN );
-		return 0;	
-	}
-*/
-	old_fs = get_fs();
-	set_fs(get_ds());
-	if ((ret = vfs_stat(NV_WIFI_MACADDR, &stat))) {
-		set_fs(old_fs);
-		printk(KERN_ERR "%s: Failed to get information (%d)\n", NV_WIFI_MACADDR, ret);
-		return ret;
-	}
-	set_fs(old_fs);
-
-	fp = filp_open(NV_WIFI_MACADDR, O_RDONLY, 0);
-  if (IS_ERR(fp))
- 	{
-		printk(KERN_ERR "Failed to read file \n");	
-		return ret;
- 	}
-
-	memset(mymac,0x00,ETHER_ADDR_LEN);
-	
-	rdlen = kernel_read(fp, fp->f_pos, addr_tmp, ETHER_ADDR_LEN*2);
-
-	if (rdlen > 0)
-	{
-		if(util_ascii_to_hex(addr_tmp, ETHER_ADDR_LEN*2, mymac) <= 0)
-		{
-			printk(KERN_ERR "=== convert error ==== \n");		
-		}
-
-		printk(KERN_ERR "get_mac_addr = %x:%x:%x:%x:%x:%x\n",mymac[0],mymac[1],mymac[2],mymac[3],mymac[4],mymac[5]);
-
-		if(check_nvmac_is_valid(mymac))
-		{		
-			memcpy( buf,mymac, ETHER_ADDR_LEN );			
-		}
-	}
-	filp_close((struct file *)fp, NULL);
-	
-	return ret;
-
-#else
-	 buf[0] = 0x00;
-	 buf[1] = 0x90;
-	 buf[2] = 0x4c;
-	 buf[3] = (unsigned char)rand_mac;
-	 buf[4] = (unsigned char)(rand_mac >> 8);
-	 buf[5] = (unsigned char)(rand_mac >> 16);
-#endif
-	return 0;
-}
-
-#define WLC_CNTRY_BUF_SZ	4		/* Country string is 3 bytes + NUL */
-struct cntry_locales_custom {
-	char iso_abbrev[WLC_CNTRY_BUF_SZ];	
-	char custom_locale[WLC_CNTRY_BUF_SZ];	
-	s32 custom_locale_rev;		
-};
-struct cntry_locales_custom cloc_ptr_temp;
-static void * x3_wifi_get_country_code(char *ccode)
-{
-	char ccode_mapped[8] = {0x00,};
-	int result;
-
-	memset(&cloc_ptr_temp,0x00,sizeof(cloc_ptr_temp));
-	result = _getWiFiMappedCode( ccode, ccode_mapped, 8 );
-	printk(KERN_ERR "*** x3 country ccode=%s ccode_mapped=%s result=%d\n",ccode,ccode_mapped,result);
-	
-	//                              
-	if( strchr( ccode_mapped, '/' ) != NULL )
-	{
-		char ccstr[32] = {0,};
-		char* ccptr = ccstr;
-		strcpy( ccstr, ccode_mapped );
-
-		ccptr = strchr( ccstr, '/' );
-		*ccptr++ = '\0';
-		strcpy( cloc_ptr_temp.custom_locale, ccstr );
-		cloc_ptr_temp.custom_locale_rev = (int)simple_strtol( ccptr, NULL, 0 );		
-	}
-	else
-	{
-		strcpy( cloc_ptr_temp.custom_locale, ccode_mapped );
-	}
-
-	printk(KERN_ERR "custom_locale=%s custom_locale=%d\n",cloc_ptr_temp.custom_locale,cloc_ptr_temp.custom_locale_rev);
-	
-	return &cloc_ptr_temp;	
-}
-
 static int x3_wifi_power(int on)
 {
-//	struct tegra_io_dpd *sd_dpd;
-
 	pr_debug("%s: %d\n", __func__, on);
-
-#if 0 /* does not use dpd for sdmmc */
+#if 0
+/* does not use dpd for sdmmc */
 	/*
 	 * FIXME : we need to revisit IO DPD code
 	 * on how should multiple pins under DPD get controlled
@@ -555,12 +356,19 @@ static int x3_wifi_power(int on)
 	}
 #endif
 
-//	gpio_set_value(X3_WLAN_PWR, on);
-//	mdelay(100);
-	gpio_set_value(X3_WLAN_RST, on);
-	mdelay(200);
+	if (on) {
+		gpio_set_value(X3_WLAN_RST, 1);
+		mdelay(100);
+		gpio_set_value(X3_WLAN_RST, 0);
+		mdelay(100);
+		gpio_set_value(X3_WLAN_RST, 1);
+		mdelay(200);
+	} else {
+		gpio_set_value(X3_WLAN_RST, 0);
+	}
 
-#if 0 /* does not use dpd for sdmmc */
+#if 0
+/* does not use dpd for sdmmc */
 	if (sd_dpd) {
 		mutex_lock(&sd_dpd->delay_lock);
 		tegra_io_dpd_enable(sd_dpd);
@@ -576,8 +384,8 @@ static int x3_wifi_reset(int on)
 	pr_debug("%s: do nothing\n", __func__);
 	return 0;
 }
-//                                                       
 
+#if 0
 #ifdef CONFIG_TEGRA_PREPOWER_WIFI
 static int __init enterprise_wifi_prepower(void)
 {
@@ -591,17 +399,11 @@ static int __init enterprise_wifi_prepower(void)
 
 subsys_initcall_sync(enterprise_wifi_prepower);
 #endif
+#endif
 
-
-//                                                         
 static int __init x3_wifi_init(void)
 {
 	int rc;
-//	int irq;
-
-//	rc = gpio_request(X3_WLAN_PWR, "wlan_power");
-//	if (rc)
-//		pr_err("WLAN_PWR gpio request failed:%d\n", rc);
 
 	rc = gpio_request(X3_WLAN_RST, "wlan_rst");
 	if (rc)
@@ -611,13 +413,9 @@ static int __init x3_wifi_init(void)
 	if (rc)
 		pr_err("WLAN_WOW gpio request failed:%d\n", rc);
 
-//	tegra_gpio_enable(X3_WLAN_PWR);
 	tegra_gpio_enable(X3_WLAN_RST);
 	tegra_gpio_enable(X3_WLAN_WOW);
 
-//	rc = gpio_direction_output(X3_WLAN_PWR, 0);
-//	if (rc)
-//		pr_err("WLAN_PWR gpio direction configuration failed:%d\n", rc);
 	rc = gpio_direction_output(X3_WLAN_RST, 0);
 	if (rc)
 		pr_err("WLAN_RST gpio direction configuration failed:%d\n", rc);
@@ -625,36 +423,22 @@ static int __init x3_wifi_init(void)
 	if (rc)
 		pr_err("WLAN_WOW gpio direction configuration failed:%d\n", rc);
 
-//                                                           
-//	tegra_gpio_enable(X3_WLAN_WOW); //nvidia recommend
-//	irq = gpio_to_irq(X3_WLAN_WOW);
-//	set_irq_flags(irq, IRQF_VALID); //add this line!
-//	rc = enable_irq_wake(irq);
-//	tegra_gpio_disable(198); //nvidia recommend
-//                                                          
-
 	platform_device_register(&x3_wifi_device);
 
 	return 0;
 }
-//                                                         
 
 int __init x3_sdhci_init(void)
 {
 	platform_device_register(&tegra_sdhci_device3);
 	platform_device_register(&tegra_sdhci_device0);
-	//                                                        
-	//                                                         
-//PTEST	tegra_sdhci_platform_data0.cd_gpio = X3_WLAN_RST;
-//			tegra_sdhci_platform_data0.cd_gpio_polarity = 1;
-	//                                                       
-	//                                                      
+
 	tegra_gpio_enable(X3_SD_CD);
 	tegra_sdhci_platform_data2.cd_gpio = X3_SD_CD;
 	platform_device_register(&tegra_sdhci_device2);
 
-#ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
-		x3_init_wlan_mem();
+#ifdef CONFIG_DHD_USE_STATIC_BUF
+	x3_init_wlan_mem();
 #endif
 
 	x3_wifi_init();	
