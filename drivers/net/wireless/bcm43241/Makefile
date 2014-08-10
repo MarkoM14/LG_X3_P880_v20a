@@ -10,7 +10,7 @@ DHDCFLAGS += -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER            \
 	-DKEEP_ALIVE -DCSCAN -DPKT_FILTER_SUPPORT                             \
 	-DEMBEDDED_PLATFORM -DPNO_SUPPORT                                     \
 	-DDHD_DONOT_FORWARD_BCMEVENT_AS_NETWORK_PKT -DGET_CUSTOM_MAC_ENABLE   \
-	-DCUSTOMER_HW2 -DENABLE_INSMOD_NO_FW_LOAD -DQMONITOR -DTOE
+	-DCUSTOMER_HW2 -DENABLE_INSMOD_NO_FW_LOAD -DQMONITOR
 
 #################
 # Common feature
@@ -97,14 +97,12 @@ DRIVER_TYPE ?= $(CONFIG_BCMDHD)
 DHDCFLAGS += -DBCM4339_CHIP -DBCM43241_CHIP -DBCM4354_CHIP
 DHDCFLAGS += -DPROP_TXSTATUS_VSDB
 DHDCFLAGS += -DCUSTOM_DPC_PRIO_SETTING=99
-DHDCFLAGS += -DRXFRAME_THREAD
-DHDCFLAGS += -DDHDTCPACK_SUPPRESS
 
 #########################
 # BCM43241Chip dependent feature
 #########################
 DHDCFLAGS += -DMIMO_ANT_SETTING
-DHDCFLAGS += -DCUSTOM_SDIO_F2_BLKSIZE=128
+DHDCFLAGS += -DCUSTOM_GLOM_SETTING=1 -DCUSTOM_SDIO_F2_BLKSIZE=128
 DHDCFLAGS += -DAMPDU_HOSTREORDER
 DHDCFLAGS += -DCUSTOM_AMPDU_BA_WSIZE=32
 ifeq ($(DRIVER_TYPE),m)
@@ -176,20 +174,20 @@ EXTRA_CFLAGS += -DSRCBASE=\"$(src)\"
 EXTRA_CFLAGS += -I$(src)/include/ -I$(src)/
 KBUILD_CFLAGS += -I$(LINUXDIR)/include -I$(shell pwd) -Idrivers/net/wireless/bcmdhd -Idrivers/net/wireless/bcmdhd/include
 
-DHDOFILES := dhd_pno.o dhd_common.o dhd_ip.o dhd_custom_gpio.o \
-	dhd_linux.o dhd_linux_sched.o dhd_cfg80211.o dhd_linux_wq.o aiutils.o bcmevent.o \
-	bcmutils.o bcmwifi_channels.o hndpmu.o linux_osl.o sbutils.o siutils.o \
-	wl_android.o wl_cfg80211.o wl_cfgp2p.o wl_cfg_btcoex.o wldev_common.o wl_linux_mon.o  \
-	dhd_linux_platdev.o dhd_pno.o dhd_linux_wq.o wl_cfg_btcoex.o dhd_qmon.o
+DHDOFILES := src/dhd_pno.o src/dhd_common.o src/dhd_ip.o src/dhd_custom_gpio.o \
+	src/dhd_linux.o src/dhd_linux_sched.o src/dhd_cfg80211.o src/dhd_linux_wq.o src/aiutils.o src/bcmevent.o \
+	src/bcmutils.o src/bcmwifi_channels.o src/hndpmu.o src/linux_osl.o src/sbutils.o src/siutils.o \
+	src/wl_android.o src/wl_cfg80211.o src/wl_cfgp2p.o src/wl_cfg_btcoex.o src/wldev_common.o src/wl_linux_mon.o  \
+	src/dhd_linux_platdev.o src/dhd_pno.o src/dhd_linux_wq.o src/wl_cfg_btcoex.o src/dhd_qmon.o
 
 ifneq ($(CONFIG_BCMDHD_SDIO),)
-  DHDOFILES += bcmsdh.o bcmsdh_linux.o bcmsdh_sdmmc.o bcmsdh_sdmmc_linux.o
-  DHDOFILES += dhd_cdc.o dhd_wlfc.o dhd_sdio.o
+  DHDOFILES += src/bcmsdh.o src/bcmsdh_linux.o src/bcmsdh_sdmmc.o src/bcmsdh_sdmmc_linux.o
+  DHDOFILES += src/dhd_cdc.o src/dhd_wlfc.o src/dhd_sdio.o
 endif
 
 ifneq ($(CONFIG_BCMDHD_PCIE),)
-  DHDOFILES += dhd_pcie.o dhd_pcie_linux.o dhd_msgbuf.o circularbuf.o
+  DHDOFILES += src/dhd_pcie.o src/dhd_pcie_linux.o src/dhd_msgbuf.o src/circularbuf.o
 endif
 
-bcmdhd-objs := $(DHDOFILES)
-obj-$(DRIVER_TYPE)   += bcmdhd.o
+bcm43241-objs := $(DHDOFILES)
+obj-$(DRIVER_TYPE)   += bcm43241.o
