@@ -21,11 +21,6 @@
 #include <linux/platform_device.h>
 
 // 20101108 BT: Added for the BT Address Read Factory command dohyung10.lee [Start]
-//                      
-/*                                                                              
-                                 
-                      
-*/
 static char mBDAddr[13];
 
 static ssize_t bd_address_store(struct device *dev,struct device_attribute *attr,const char *buf, size_t count)
@@ -33,64 +28,42 @@ static ssize_t bd_address_store(struct device *dev,struct device_attribute *attr
     
 	sscanf(buf, "%s", mBDAddr);
 
-    return count;
+	return count;
 }
-
-/*                                                                             
-                                 
-                      
-*/
 
 static ssize_t bd_address_show(struct device *dev,struct device_attribute *attr,char *buf)
 {
    
-   return sprintf(buf, "%s\n", mBDAddr);
+	return sprintf(buf,"%c%c:%c%c:%c%c:%c%c:%c%c:%c%c\n",
+		mBDAddr[0], mBDAddr[1], mBDAddr[2],
+		mBDAddr[3], mBDAddr[4], mBDAddr[5],
+		mBDAddr[6], mBDAddr[7], mBDAddr[8],
+		mBDAddr[9], mBDAddr[10], mBDAddr[11]);
 }
 static DEVICE_ATTR(bdaddr_if, 0666, bd_address_show, bd_address_store);
-
-
-/*                                              
-                                 
-                      
-*/
 
 static int __devexit bd_address_remove(struct platform_device *pdev)
 {
 	return 0;
 }
 
-/*                                              
-                                 
-                      
-*/
-
 static int __devinit bd_address_probe(struct platform_device *pdev)
 {
 	int ret;
 
 	ret = device_create_file(&pdev->dev, &dev_attr_bdaddr_if);
-    if (ret) {
-        printk( "BD Addr sysfs register failed: Fail\n");
-    }
+	if (ret) {
+		printk( "BD Addr sysfs register failed: Fail\n");
+	}
 
 	return ret;
 }
-
-/*                                              
-                                 
-                      
-*/
 
 static int bd_address_suspend(struct platform_device *pdev,
 	pm_message_t state)
 {
 	return 0;
 }
-
-/*                                              
-                                 
-                      
-*/
 
 static int bd_address_resume(struct platform_device *pdev)
 {
