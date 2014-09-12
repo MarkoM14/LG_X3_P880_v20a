@@ -22,7 +22,8 @@
 #include <linux/cpuset.h>
 #include <linux/notifier.h>
 
-#ifdef CONFIG_DEBUG_FS
+//#ifdef CONFIG_DEBUG_FS
+#if 0
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>	/* for copy_from_user */
 #endif
@@ -31,25 +32,6 @@
 #include <asm/topology.h>
 
 #define ARM_FAMILY_MASK 0xFF0FFFF0
-
-#define MPIDR_SMP_BITMASK (0x3 << 30)
-#define MPIDR_SMP_VALUE (0x2 << 30)
-
-#define MPIDR_MT_BITMASK (0x1 << 24)
-
-/*
- * These masks reflect the current use of the affinity levels.
- * The affinity level can be up to 16 bits according to ARM ARM
- */
-
-#define MPIDR_LEVEL0_MASK 0x3
-#define MPIDR_LEVEL0_SHIFT 0
-
-#define MPIDR_LEVEL1_MASK 0xF
-#define MPIDR_LEVEL1_SHIFT 8
-
-#define MPIDR_LEVEL2_MASK 0xFF
-#define MPIDR_LEVEL2_SHIFT 16
 
 struct cputopo_arm cpu_topology[NR_CPUS];
 
@@ -274,19 +256,14 @@ void store_cpu_topology(unsigned int cpuid)
 
 		if (mpidr & MPIDR_MT_BITMASK) {
 			/* core performance interdependency */
-			cpuid_topo->thread_id = (mpidr >> MPIDR_LEVEL0_SHIFT)
-				& MPIDR_LEVEL0_MASK;
-			cpuid_topo->core_id = (mpidr >> MPIDR_LEVEL1_SHIFT)
-				& MPIDR_LEVEL1_MASK;
-			cpuid_topo->socket_id = (mpidr >> MPIDR_LEVEL2_SHIFT)
-				& MPIDR_LEVEL2_MASK;
+			cpuid_topo->thread_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+			cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL(mpidr, 1);
+			cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL(mpidr, 2);
 		} else {
 			/* largely independent cores */
 			cpuid_topo->thread_id = -1;
-			cpuid_topo->core_id = (mpidr >> MPIDR_LEVEL0_SHIFT)
-				& MPIDR_LEVEL0_MASK;
-			cpuid_topo->socket_id = (mpidr >> MPIDR_LEVEL1_SHIFT)
-				& MPIDR_LEVEL1_MASK;
+			cpuid_topo->core_id = MPIDR_AFFINITY_LEVEL(mpidr, 0);
+			cpuid_topo->socket_id = MPIDR_AFFINITY_LEVEL(mpidr, 1);
 		}
 
 		cpuid_topo->id = read_cpuid_id() & ARM_FAMILY_MASK;
@@ -341,7 +318,7 @@ int arch_update_cpu_topology(void)
  * init_cpu_topology is called at boot when only one cpu is running
  * which prevent simultaneous write access to cpu_topology array
  */
-void init_cpu_topology(void)
+void __init init_cpu_topology(void)
 {
 	unsigned int cpu;
 
@@ -365,7 +342,8 @@ void init_cpu_topology(void)
  * debugfs interface for scaling cpu power
  */
 
-#ifdef CONFIG_DEBUG_FS
+//#ifdef CONFIG_DEBUG_FS
+#if 0
 static struct dentry *topo_debugfs_root;
 
 static ssize_t dbg_write(struct file *file, const char __user *buf,
