@@ -64,7 +64,7 @@ static int suspend_index;
 
 static bool force_policy_max;
 
-#define RESTRICTED_CLOCK	475000
+#define RESTRICTED_CLOCK	620000
 unsigned int capped_screenoff = RESTRICTED_CLOCK;
 
 static int force_policy_max_set(const char *arg, const struct kernel_param *kp)
