@@ -385,20 +385,15 @@ static int x3_wifi_reset(int on)
 	return 0;
 }
 
-#if 0
 #ifdef CONFIG_TEGRA_PREPOWER_WIFI
-static int __init enterprise_wifi_prepower(void)
+static int __init x3_wifi_prepower(void)
 {
-	if (!machine_is_tegra_enterprise())
-		return 0;
-
-	enterprise_wifi_power(1);
+	x3_wifi_power(1);
 
 	return 0;
 }
 
-subsys_initcall_sync(enterprise_wifi_prepower);
-#endif
+subsys_initcall_sync(x3_wifi_prepower);
 #endif
 
 static int __init x3_wifi_init(void)
