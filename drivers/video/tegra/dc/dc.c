@@ -2248,6 +2248,9 @@ static int tegra_dc_resume(struct nvhost_device *ndev)
 
 	mutex_lock(&dc->lock);
 	dc->suspended = false;
+	
+	if (dc->out && dc->out->prepoweron) /*wakeup time from LP0 ** Nvidia patch**/
+		dc->out->prepoweron();
 
 	if (dc->enabled) {
 		_tegra_dc_set_default_videomode(dc);
@@ -2256,9 +2259,7 @@ static int tegra_dc_resume(struct nvhost_device *ndev)
 
 	if (dc->out && dc->out->hotplug_init)
 		dc->out->hotplug_init();
-
-	if (dc->out && dc->out->prepoweron) /*wakeup time from LP0 ** Nvidia patch**/
-		dc->out->prepoweron();
+	
 
 	if (dc->out_ops && dc->out_ops->resume)
 		dc->out_ops->resume(dc);

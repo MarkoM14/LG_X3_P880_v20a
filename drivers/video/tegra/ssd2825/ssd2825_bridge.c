@@ -542,12 +542,11 @@ int ssd2825_bridge_enable(void)
 //                                                                                                       
 
 		gpio_set_value(gpio_bridge_reset_n, 0);
-		mdelay(5);
-		gpio_set_value(gpio_bridge_reset_n, 1);
 		gpio_set_value(gpio_lcd_reset_n, 0);
 		mdelay(1);
+		gpio_set_value(gpio_bridge_reset_n, 1);
 		gpio_set_value(gpio_lcd_reset_n, 1);
-		mdelay(5);
+		mdelay(1);
 
 /*                                 */
 		clk_enable(clk_s3);
@@ -608,7 +607,7 @@ int ssd2825_bridge_disable(void)
 
 			sequence++;
 		}
-		mdelay(10);
+		mdelay(5);
 
 //                                                                                         
 		gpio_set_value(gpio_lcd_reset_n, 0);
@@ -882,6 +881,7 @@ static int scan_single_int_and_space(const char *buf, int *out)
 {
 	char c = buf[0];
 	int n = 0;
+	int i = 0;
 
 	// At least 1 digit is mandatory.
 	if (c >= '0' && c <= '9') {
@@ -890,7 +890,6 @@ static int scan_single_int_and_space(const char *buf, int *out)
 		return -1;
 	}
 
-	int i;
 	for (i = 1; i < 4; i++) {
 		c = buf[i];
 		switch (c) {
@@ -915,6 +914,7 @@ static int scan_single_int_and_space(const char *buf, int *out)
 			return -1;
 		}
 	}
+	return 0;
 }
 
 static ssize_t display_gamma_lut_store(struct device *dev,
@@ -935,7 +935,7 @@ static ssize_t display_gamma_lut_store(struct device *dev,
 	// isn't forced to put a space or NUL.
 	size++;
 
-	int i; // Index in lut
+	int i;     // Index in lut
 	int j = 0; // Index in buf
 
 	// Write r, g and b contigiously in a single loop.
@@ -944,7 +944,7 @@ static ssize_t display_gamma_lut_store(struct device *dev,
 	// Make sure we scan at most 4 bytes each iteration (3 digits + space)
 	// to avoid running past the end of buf.
 	for (i = 0; i < 3 * 256; i++) {
-		int n;
+		int n = 0;
 		int bytes_consumed = scan_single_int_and_space(&buf[j], &n);
 		if (bytes_consumed < 0) { // Invalid data
 			return -EINVAL;
@@ -1015,7 +1015,6 @@ void ssd2825_bridge_spi_resume(struct early_suspend * h)
 	schedule_delayed_work(&work_instance->work_reg_check, msecs_to_jiffies(100));
 #endif
 	printk(KERN_INFO "%s end \n", __func__);
-	//return 0;
 }
 
 static int ssd2825_bridge_reboot_notify(struct notifier_block *nb,
