@@ -46,8 +46,8 @@
 #endif	
 //                                         
 
-#define XMM6260_GPIO_BB_RST			MODEM_RESET
-#define XMM6260_GPIO_BB_ON			MODEM_PWR_ON
+#define XMM6260_GPIO_BB_RST			MODEM_RESET   //TEGRA_GPIO_PV1 muic??
+#define XMM6260_GPIO_BB_ON			MODEM_PWR_ON  //TEGRA_GPIO_PO0 muic??
 #define XMM6260_GPIO_IPC_BB_WAKE		AP2CP_ACK1_SLAVE_WAKEUP
 #define XMM6260_GPIO_IPC_AP_WAKE		CP2AP_ACK2_HOST_WAKEUP
 #define XMM6260_GPIO_IPC_HSIC_ACTIVE		CP2AP_ACK1_HOST_ACTIVE
@@ -177,6 +177,7 @@ static struct tegra_ehci_platform_data tegra_ehci_uhsic_pdata = {
 struct platform_device *tegra_usb_hsic_host_register(struct platform_device *ehci_dev)
 {
 	struct platform_device *pdev;
+//	void *platform_data;
 	int val;
 
 	pdev = platform_device_alloc(ehci_dev->name, ehci_dev->id);
@@ -211,13 +212,13 @@ error:
 
 void tegra_usb_hsic_host_unregister(struct platform_device **platdev)
 {
-        struct platform_device *pdev = *platdev;
+	struct platform_device *pdev = *platdev;
 
-        if (pdev && &pdev->dev) {
-                platform_device_unregister(pdev);
-                *platdev = NULL;
-        } else
-                pr_err("%s: no platform device\n", __func__);
+	if (pdev && &pdev->dev) {
+		platform_device_unregister(pdev);
+		*platdev = NULL;
+	} else
+		pr_err("%s: no platform device\n", __func__);
 }
 
 
@@ -225,14 +226,14 @@ static int __init tegra_uhsic_init(void)
 {
 	tegra_ehci2_device.dev.platform_data = &tegra_ehci2_hsic_imc_pdata;
 	
-	/* enable baseband gpio(s) */										   
+	/* enable baseband gpio(s) 
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.bb_rst);  
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.bb_on);	   
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_bb_wake); 
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_ap_wake); 
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_hsic_active);
 	tegra_gpio_enable(tegra_baseband_power_data.modem.xmm.ipc_hsic_sus_req);
-
+*/
 	tegra_baseband_power_data.hsic_register =
 					&tegra_usb_hsic_host_register;
 	tegra_baseband_power_data.hsic_unregister =
@@ -240,6 +241,7 @@ static int __init tegra_uhsic_init(void)
 	tegra_baseband_power_data.ehci_device = &tegra_ehci2_device;
 
 	platform_device_register(&tegra_baseband_power_device); 
+//	platform_device_register(&tegra_baseband_power2_device);
 	return 0;
 }
 

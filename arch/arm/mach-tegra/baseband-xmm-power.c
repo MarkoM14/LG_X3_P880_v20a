@@ -34,7 +34,6 @@
 #include <mach/usb_phy.h>
 #include <linux/regulator/consumer.h>
 #include "board.h"
-#include "board-enterprise.h"
 #include "devices.h"
 #include "gpio-names.h"
 #include "baseband-xmm-power.h"
@@ -51,6 +50,10 @@ EXPORT_SYMBOL(modem_flash);
 unsigned long modem_pm = 1;
 EXPORT_SYMBOL(modem_pm);
 
+unsigned long autosuspend_delay = 300;
+unsigned long long_autosuspend_delay = 2500;
+static bool long_suspend;
+
 module_param(modem_ver, ulong, 0644);
 MODULE_PARM_DESC(modem_ver,
 	"baseband xmm power - modem software version");
@@ -58,9 +61,16 @@ module_param(modem_pm, ulong, 0644);
 MODULE_PARM_DESC(modem_pm,
 	"baseband xmm power - modem power management (1 = pm, 0 = no pm)");
 
+module_param(autosuspend_delay, ulong, 0644);
+MODULE_PARM_DESC(autosuspend_delay,
+	"baseband xmm power - usb_device autosuspend delay in ms");
+module_param(long_autosuspend_delay, ulong, 0644);
+MODULE_PARM_DESC(long_autosuspend_delay,
+	"baseband xmm power - usb_device autosuspend delay in ms when screen is on");
+
 static struct usb_device_id xmm_pm_ids[] = {
 	/* xmm modem variant 1 */
-	{ USB_DEVICE(0x1519, 0x0020), },
+	{ USB_DEVICE(0x1519, 0x0020), }, //lge-x3 uses this.
 	/* xmm modem variant 2 */
 	{ USB_DEVICE(0x1519, 0x0443), },
 	{}
@@ -95,7 +105,7 @@ static bool modem_acked_resume;
 static spinlock_t xmm_lock;
 static DEFINE_MUTEX(xmm_onoff_mutex);
 static bool system_suspending;
-static bool enum_success;
+bool enum_success; //used in ts0710_mux
 
 /* driver specific data - same structure is used for flashless
  * & flashed modem drivers i.e. baseband-xmm-power2.c
@@ -254,7 +264,7 @@ static int xmm_power_off(struct platform_device *device)
 	return 0;
 }
 
-static ssize_t xmm_onoff(struct device *dev, struct device_attribute *attr,
+static ssize_t baseband_xmm_onoff(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
 {
 	int pwr;
@@ -300,18 +310,21 @@ static ssize_t xmm_onoff(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
-static ssize_t xmm_onoff_show(struct device *dev,
-            struct device_attribute *attr,
-            char *buf)
+static ssize_t baseband_xmm_onoff_show(struct device *dev,
+			struct device_attribute *attr,
+			char *buf)
 {
-    int onoff = power_onoff;
-    pr_debug("%s, enum(%d), onoff(%d)\n", __func__, enum_success, power_onoff );
-if(enum_success)
-	onoff = 2;
-    return sprintf(buf, "%d", onoff);
+	int onoff = power_onoff;
+	pr_debug("%s, enum(%d), onoff(%d)\n", __func__, enum_success, power_onoff );
+
+	if (enum_success)
+		onoff = 2;
+
+	return sprintf(buf, "%d", onoff);
 }
 
-static DEVICE_ATTR(xmm_onoff, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, xmm_onoff_show, xmm_onoff);
+static DEVICE_ATTR(xmm_onoff, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP,
+		baseband_xmm_onoff_show, baseband_xmm_onoff);
 
 void baseband_xmm_power_switch(bool power_on)
 {
@@ -336,7 +349,6 @@ void baseband_xmm_power_switch(bool power_on)
 				filp->f_op->write(filp, "1", 1, &filp->f_pos);
 			else
 				filp->f_op->write(filp, "0", 1, &filp->f_pos);
-				
 			filp_close(filp, NULL);
 		}
 		set_fs(oldfs);
@@ -344,14 +356,16 @@ void baseband_xmm_power_switch(bool power_on)
 
 	pr_info("%s }\n", __func__);
 }
-
 EXPORT_SYMBOL_GPL(baseband_xmm_power_switch);
+
+extern bool x3_hddisplay_on;
 
 /* Do the work for AP/CP initiated L2->L0 */
 static void xmm_power_l2_resume(void)
 {
 	struct baseband_power_platform_data *pdata = xmm_power_drv_data.pdata;
 	struct xmm_power_data *drv = &xmm_power_drv_data;
+	struct usb_interface;
 	int value;
 	int delay = 1000; /* maxmum delay in msec */
 	unsigned long flags;
@@ -370,7 +384,8 @@ static void xmm_power_l2_resume(void)
 
 	/* claim the wakelock here to avoid any system suspend */
 	if (!wake_lock_active(&wakelock))
-		wake_lock_timeout(&wakelock, HZ*2);
+//		wake_lock_timeout(&wakelock, HZ*2);
+		wake_lock(&wakelock);
 
 	spin_lock_irqsave(&xmm_lock, flags);
 	modem_sleep_flag = false;
@@ -401,6 +416,17 @@ retry:
 			rcount++;
 			goto retry;
 		}
+		if (!x3_hddisplay_on && long_suspend) {
+			pm_runtime_set_autosuspend_delay(&usbdev->dev, autosuspend_delay);
+			pr_info("xmm: autosuspend_delay = %ld\n", autosuspend_delay);
+			long_suspend = false;
+		} else if (!long_suspend && x3_hddisplay_on) {
+			pm_runtime_set_autosuspend_delay(&usbdev->dev, long_autosuspend_delay);
+			pr_info("xmm: autosuspend_delay = %ld\n", long_autosuspend_delay);
+			long_suspend = true;
+		}
+		if (wake_lock_active(&wakelock))
+			wake_unlock(&wakelock);
 		pr_debug("Get gpio host wakeup low <-\n");
 	} else {
 		cp_initiated_l2tol0 = false;
@@ -429,7 +455,7 @@ void baseband_xmm_set_power_status(unsigned int status)
 	case BBXMM_PS_L0:
 		baseband_xmm_powerstate = status;
 		if (!wake_lock_active(&wakelock))
-			wake_lock_timeout(&wakelock, HZ*2);
+			wake_lock_timeout(&wakelock, HZ*1);
 
 		/* pull hsic_active high for enumeration */
 		value = gpio_get_value(data->modem.xmm.ipc_hsic_active);
@@ -489,7 +515,6 @@ void baseband_xmm_set_power_status(unsigned int status)
 	pr_debug("BB XMM POWER STATE = %d\n", status);
 }
 EXPORT_SYMBOL_GPL(baseband_xmm_set_power_status);
-
 
 irqreturn_t xmm_power_ipc_ap_wake_irq(int value)
 {
@@ -608,9 +633,7 @@ static void xmm_power_init2_work(struct work_struct *work)
 		else
 			pr_err("%s: hsic_register is missing\n", __func__);
 		register_hsic_device = false;
-
 	}
-
 	enum_success = true;
 }
 
@@ -632,7 +655,6 @@ static void xmm_power_autopm_resume(struct work_struct *work)
 	}
 }
 
-
 /* Do the work for CP initiated L2->L0 */
 static void xmm_power_l2_resume_work(struct work_struct *work)
 {
@@ -647,6 +669,19 @@ static void xmm_power_l2_resume_work(struct work_struct *work)
 	if (usb_autopm_get_interface(intf) == 0)
 		usb_autopm_put_interface(intf);
 	usb_unlock_device(usbdev);
+
+	if (!x3_hddisplay_on && long_suspend) {
+		pm_runtime_set_autosuspend_delay(&usbdev->dev, autosuspend_delay);
+		pr_info("xmm: autosuspend_delay = %ld\n", autosuspend_delay);
+		long_suspend = false;
+	} else if (!long_suspend && x3_hddisplay_on) {
+		pm_runtime_set_autosuspend_delay(&usbdev->dev, long_autosuspend_delay);
+		pr_info("xmm: autosuspend_delay = %ld\n", long_autosuspend_delay);
+		long_suspend = true;
+	}
+
+	if (wake_lock_active(&wakelock))
+		wake_unlock(&wakelock);
 
 	pr_debug("} %s\n", __func__);
 }
@@ -724,6 +759,8 @@ static void xmm_device_add_handler(struct usb_device *udev)
 			udev->manufacturer, udev->product);
 		usbdev = udev;
 		usb_enable_autosuspend(udev);
+		pm_runtime_set_autosuspend_delay(&usbdev->dev, long_autosuspend_delay);
+		long_suspend = true;
 		pr_info("enable autosuspend\n");
 	}
 }
