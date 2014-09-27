@@ -75,7 +75,7 @@ obj-y +=muic/
 obj-$(CONFIG_TSPDRV)		+= tspdrv/
 #LGE_IMC_RIL
 obj-y				+= ts0710mux/
-obj-y				+= cpwatcher.o
+obj-$(CONFIG_CPWATCHER)		+= cpwatcher.o
 #LGE_IMC_RIL
 obj-y   += mtc_eta/
 obj-$(CONFIG_TEGRA_THROUGHPUT)	+= tegra-throughput.o

@@ -89,7 +89,6 @@ this mux driver is not able to acquire the sema but wont schedule as its not set
 #define TS0710MAX_PRIORITY_NUMBER 64
 #else
 #define TS0710MAX_CHANNELS 23
-//#include "ts0710_mux_usb.h"
 #endif
 
 //20110516 ws.yang@lge.com .. to define the buffer [S]
@@ -99,17 +98,17 @@ this mux driver is not able to acquire the sema but wont schedule as its not set
 #include "ts0710.h"
 #include "ts0710_mux.h"
 
-//20110516 ws.yang@lge.com 
 #define LGE_ENABLE_RIL_RECOVERY_MODE
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
 #include <linux/delay.h>
+#include <linux/input.h>
 #include "../../../arch/arm/mach-tegra/baseband-xmm-power.h"
 
 // description : This macro enables wakelock if ts_ldisc_close function is called because of RILD exit
 #define ENABLE_MUX_WAKE_LOCK
 #ifdef ENABLE_MUX_WAKE_LOCK
 #include <linux/wakelock.h>
-#define MUX_WAKELOCK_TIME		(30*HZ)
+#define MUX_WAKELOCK_TIME	(20*HZ)
 struct wake_lock	 	s_wake_lock;
 #endif //ENABLE_MUX_WAKE_LOCK
 
@@ -263,8 +262,6 @@ static u8 max_waiting_frames_count[] = {
 
 static int max_frame_usage = 0;
 
-
-
 //#define MUX_BUFFER_DUMP
 #ifdef MUX_BUFFER_DUMP
 #define DUMP_MUX_BUFFER_SIZE 64
@@ -347,6 +344,7 @@ static int node_put_to_send(u8 dlci, u8 *data, int size)
     struct spi_data_send_struct *new_frame;
     u8 priority;
     int frame_count = 0;
+    int dont_wait = 0;
 
 	TS0710_DEBUG("start!");
 
@@ -361,7 +359,7 @@ static int node_put_to_send(u8 dlci, u8 *data, int size)
     unsigned int smp_id = smp_processor_id();
 #endif
 
-    int dont_wait = (in_interrupt() || ((mux_filp[dlci] != NULL) && (mux_filp[dlci]->f_flags & O_NONBLOCK)));
+    dont_wait = (in_interrupt() || ((mux_filp[dlci] != NULL) && (mux_filp[dlci]->f_flags & O_NONBLOCK)));
 
     TS0710_DEBUG("node_put_to_send: dont_wait=%d, frames_to_send_count=%d, max_waiting_frames_count=%d  \n",dont_wait, frames_to_send_count[dlci], max_waiting_frames_count[dlci]);
 
@@ -565,7 +563,7 @@ static int mux_send_frame(u8 dlci, int initiator, enum mux_frametype frametype, 
    switch (frametype) 
    {
      	case MUX_UIH:
-     	case ACK:
+     	case MUX_ACK:
      		pf = 0;
      		crc_len = len;
      		break;
@@ -2363,11 +2361,12 @@ static int ts_ldisc_tx_looper(void *param)
 }
 #endif
 
-//TODO remove
-int is_usb_disconnect = 0;  //                                                                      
-int is_cp_crash = 0;    //RIP-13119 : RIL recovery should be started by USB-disconnecti
+int is_usb_disconnect = 0;  //hub                                                                  
+int is_cp_crash = 0;    //cpwatcher
 
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
+static struct input_dev *recovery_dev;
+extern bool enum_success; //baseband-xmm-power.c
 unsigned long ril_recovery_cnt = 0;
 module_param(ril_recovery_cnt, ulong, 0644);
 MODULE_PARM_DESC(ril_recovery_cnt,
@@ -2438,11 +2437,10 @@ static int ts_ldisc_open(struct tty_struct *tty)
 
 static void ts_ldisc_close(struct tty_struct *tty)
 {
+	int retry = 16;
 	ipc_tty = NULL;
 
 #ifdef CONFIG_LGE_KERNEL_MUX
-	TS0710_PRINTK("is start !!!, ts_ldisc_close_is_called = %d", ts_ldisc_close_is_called);    
-
 	if(write_task != NULL) {
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
         ts_ldisc_close_is_called = 1; //true
@@ -2470,10 +2468,8 @@ static void ts_ldisc_close(struct tty_struct *tty)
 	printk(KERN_ERR "******************************* \n");
 	printk(KERN_ERR"### CP Crash : %d, USB DISCONNECT : %d ###\n",is_cp_crash, is_usb_disconnect);
 	
-	if (is_cp_crash == 1) {
+	if (is_cp_crash == 1)
 		is_usb_disconnect = 0;
-		is_cp_crash = 0;
-	}
 	
 	if (tty->disc_data) {
 		TS0710_DEBUG("tty->disc_data = 0x%p\n", tty->disc_data);
@@ -2482,15 +2478,32 @@ static void ts_ldisc_close(struct tty_struct *tty)
 	}
 
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
-	TS0710_PRINTK("modem reset start !!");
+	//TODO is there a better way to wake ril?
+	input_report_key(recovery_dev, KEY_POWER, 1);
+	input_report_key(recovery_dev, KEY_POWER, 0);
+	input_sync(recovery_dev);
+	TS0710_PRINTK("Input power_key sendt to wake RIL");
 
 	//reset baseband_xmm
 	baseband_xmm_power_switch(0);
-	mdelay(600);
+	mdelay(600); //TODO wait longer or until lge-ril-recovery starts ??
 	baseband_xmm_power_switch(1);
-	mdelay(2000);
 
-	ts_ldisc_close_is_called = 0; //init
+	// wait for enum_sucess for 8sec before setting ts_ldisc_close_is_called
+	if (!enum_success) {
+		do {
+			TS0710_DEBUG("wait for modem emulation");
+			mdelay(500);
+			retry--;
+		} while ((!enum_success) && (retry));
+		if (!retry)
+			TS0710_PRINTK("Giving up waiting for modem");
+	}
+
+	ts_ldisc_close_is_called = 0;
+	if (is_cp_crash == 1)
+		is_cp_crash = 0;
+
 	ril_recovery_cnt++;
 	TS0710_PRINTK("### ril_recovery_cnt = %lu ###\n", ril_recovery_cnt);
 #endif // LGE_ENABLE_RIL_RECOVERY_MODE
@@ -2599,7 +2612,7 @@ static int __init mux_init(void)
      mux_driver = alloc_tty_driver(NR_MUXS);
      if (!mux_driver)
      {
-	 	TS0710_PRINTK("mux driver alloc is fail !!!" );
+     	TS0710_PRINTK("mux driver alloc is fail !!!" );
      	return -ENOMEM;
      }
 
@@ -2632,24 +2645,48 @@ static int __init mux_init(void)
      tty_set_operations(mux_driver, &mux_ops);
 
      /* FIXME: No panic() here */
-  result=tty_register_driver(mux_driver);
-  if (result != 0 ){
-    TS0710_PRINTK(" returns %d",result);
-    panic("TS0710 :Couldn't register mux driver");
-  }
+     result=tty_register_driver(mux_driver);
+     if (result != 0 ){
+     	TS0710_PRINTK(" returns %d",result);
+     	panic("TS0710 :Couldn't register mux driver");
+     }
 
      for (j = 0; j < NR_MUXS; j++)
      	tty_register_device(mux_driver, j, NULL);
 
-  result=tty_register_ldisc(N_GSM0710, &ts_ldisc);
-  if (result != 0){
-    TS0710_PRINTK("cant register ldisc\n");
-  }
+     result=tty_register_ldisc(N_GSM0710, &ts_ldisc);
+     if (result != 0){
+     	TS0710_PRINTK("cant register ldisc\n");
+     }
+  
+#ifdef LGE_ENABLE_RIL_RECOVERY_MODE
+     /*input device*/
+     int error;
 
+     recovery_dev = input_allocate_device();
+     if (!recovery_dev) {
+     	error = -ENOMEM;
+     	goto err_free_dev;
+     }
+
+     recovery_dev->evbit[0] = BIT_MASK(EV_KEY);
+     recovery_dev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+
+     error = input_register_device(recovery_dev);
+     if (error) {
+     	TS0710_PRINTK("Failed to register input device\n");
+     	goto err_free_dev;
+     }
+#endif
+  
 #ifdef ENABLE_MUX_WAKE_LOCK
-	 wake_lock_init(&s_wake_lock, WAKE_LOCK_SUSPEND, "mux_wake");
+     wake_lock_init(&s_wake_lock, WAKE_LOCK_SUSPEND, "mux_wake");
 #endif
 
+     return 0;
+     
+err_free_dev:
+     input_free_device(recovery_dev);
      return 0;
 }
 

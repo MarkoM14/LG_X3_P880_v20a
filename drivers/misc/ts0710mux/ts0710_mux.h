@@ -170,13 +170,16 @@ static void fcs_init(void);
 
 static void send_sabm(ts0710_con * ts0710, __u8 dlci);
 static void send_dm(ts0710_con * ts0710, __u8 dlci);
+#ifndef CONFIG_LGE_KERNEL_MUX
 static void send_disc(ts0710_con * ts0710, __u8 dlci);
+static void send_ack(ts0710_con * ts0710, __u8 seq_num);
+#endif
 static void send_ua(ts0710_con * ts0710, __u8 dlci);
 static void send_pn_msg(ts0710_con * ts0710, __u8 prior, __u32 frame_size,
-		       __u8 credit_flow, __u8 credits, __u8 dlci, __u8 cr);
+			__u8 credit_flow, __u8 credits, __u8 dlci, __u8 cr);
 
 static void send_nsc_msg(ts0710_con * ts0710, mcc_type cmd, __u8 cr);
 static void mux_send_uih(ts0710_con * ts0710, __u8 cr,__u8 type, __u8 *data, int len);
 static void ts0710_fcoff_msg(ts0710_con * ts0710, __u8 cr);
 static void ts0710_fcon_msg(ts0710_con * ts0710, __u8 cr);
-static void send_ack(ts0710_con * ts0710, __u8 seq_num);
+
