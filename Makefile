@@ -564,6 +564,15 @@ else
 KBUILD_CFLAGS	+= -O2
 endif
 
+#Optimization flags for LGE X3
+ifdef CONFIG_MACH_X3
+#cortex-a9 flags
+KBUILD_CFLAGS += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
+#Perform Link Time Optimization (LTO)
+#KBUILD_CFLAGS += -flto
+#LDFLAGS += -flto
+endif
+
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
 ifneq ($(CONFIG_FRAME_WARN),0)
