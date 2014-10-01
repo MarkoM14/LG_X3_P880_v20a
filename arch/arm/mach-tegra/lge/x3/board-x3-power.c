@@ -323,6 +323,8 @@ static struct regulator_consumer_supply max77663_sd2_supply[] = {
 	REGULATOR_SUPPLY("vddio_cam", NULL),
 	REGULATOR_SUPPLY("pwrdet_cam", NULL),
 	REGULATOR_SUPPLY("vddio_sys", NULL),
+	REGULATOR_SUPPLY("pwrdet_nand", NULL),
+	REGULATOR_SUPPLY("pwrdet_pex_ctl", NULL),
 };
 
 static struct regulator_consumer_supply max77663_sd3_supply[] = {
@@ -347,6 +349,7 @@ static struct regulator_consumer_supply max77663_ldo2_supply[] = {
 };
 
 static struct regulator_consumer_supply max77663_ldo3_supply[] = {
+	REGULATOR_SUPPLY("vmmc", NULL),
 	REGULATOR_SUPPLY("vddio_sdmmc", "sdhci-tegra.2"),
 	REGULATOR_SUPPLY("pwrdet_sdmmc3", NULL),
 };
