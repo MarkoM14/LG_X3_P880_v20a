@@ -246,6 +246,7 @@ int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n)
 {
 	struct tegra_dc *dc;
 	unsigned long update_mask = GENERAL_ACT_REQ;
+	unsigned long val;
 	bool update_blend = false;
 	unsigned long win_options;
 	int i;
@@ -268,11 +269,11 @@ int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n)
 			mutex_unlock(&dc->one_shot_lock);
 		return -EFAULT;
 	}
-        //                                                                                      
+        // TODO what is this lge??
         val = tegra_dc_readl(dc, DC_CMD_INT_MASK);
         val &= ~(FRAME_END_INT | V_BLANK_INT | ALL_UF_INT);
         tegra_dc_writel(dc, val, DC_CMD_INT_MASK);
-        //                                                                                    
+        //  
 	tegra_dc_hold_dc_out(dc);
 
 	if (no_vsync)
