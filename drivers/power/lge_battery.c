@@ -37,8 +37,8 @@
 #endif
 //                                                               
 
-#define POLLING_INTERVAL	(10 * HZ)
-#define POLLING_INTERVAL_DISCHG (20 * HZ)
+#define POLLING_INTERVAL	(20 * HZ)
+#define POLLING_INTERVAL_DISCHG (40 * HZ)
 #define CAMERA_STATE_ROOT	"/sys/devices/platform/tegra_camera/power_save_rec"
 
 // For Battery Scenario Start
@@ -109,7 +109,7 @@ int batt_Temp_C = 0x10000;
 #define UNLIMITED_TEMP_LOW	-50
 
 
-#define __DEBUG_TEMP
+//#define __DEBUG_TEMP
 
 #ifdef __DEBUG_TEMP
 #define DTEMP(fmt, args...) printk("[TEMP] " fmt, ##args)

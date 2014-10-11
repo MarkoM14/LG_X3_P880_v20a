@@ -103,6 +103,12 @@ static void usb_host_vbus_enable(struct tegra_usb_phy *phy, bool enable)
 	}
 }
 
+void tegra_usb_enable_vbus(struct tegra_usb_phy *phy, bool enable)
+{
+	usb_host_vbus_enable(phy, enable);
+}
+EXPORT_SYMBOL_GPL(tegra_usb_enable_vbus);
+
 int usb_phy_reg_status_wait(void __iomem *reg, u32 mask,
 					u32 result, u32 timeout)
 {
@@ -187,6 +193,16 @@ static void tegra_usb_phy_release_clocks(struct tegra_usb_phy *phy)
 static int tegra_usb_phy_get_clocks(struct tegra_usb_phy *phy)
 {
 	int err = 0;
+	
+	phy->pllu_reg = regulator_get(&phy->pdev->dev, "avdd_usb_pll");
+	if (IS_ERR_OR_NULL(phy->pllu_reg)) {
+		ERR("Couldn't get regulator avdd_usb_pll: %ld\n",
+			PTR_ERR(phy->pllu_reg));
+		err = PTR_ERR(phy->pllu_reg);
+		phy->pllu_reg = NULL;
+		goto fail_pllu_reg;
+	}
+	regulator_enable(phy->pllu_reg);
 
 	phy->pllu_clk = clk_get_sys(NULL, "pll_u");
 	if (IS_ERR(phy->pllu_clk)) {
@@ -241,6 +257,10 @@ fail_ctrlr_clk:
 	clk_put(phy->pllu_clk);
 
 fail_pll:
+	regulator_disable(phy->pllu_reg);
+	regulator_put(phy->pllu_reg);
+
+fail_pllu_reg:
 	return err;
 }
 
@@ -280,6 +300,9 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct platform_device *pdev)
 
 	phy->pdev = pdev;
 	phy->inst = pdev->id;
+	
+	if (phy->pdata->op_mode == TEGRA_USB_OPMODE_HOST)
+		phy->hot_plug = phy->pdata->u_data.host.hot_plug;
 
 	print_usb_plat_data_info(phy);
 
@@ -373,7 +396,6 @@ struct tegra_usb_phy *tegra_usb_phy_open(struct platform_device *pdev)
 		}
 		usb_host_vbus_enable(phy, true);
 	}
-
 	err = tegra_usb_phy_init_ops(phy);
 	if (err) {
 		ERR("inst:[%d] Failed to init ops\n", phy->inst);
@@ -461,6 +483,11 @@ void tegra_usb_phy_close(struct tegra_usb_phy *phy)
 	}
 
 	tegra_usb_phy_release_clocks(phy);
+	
+	if (phy->pllu_reg) {
+		regulator_disable(phy->pllu_reg);
+		regulator_put(phy->pllu_reg);
+	}
 
 	devm_kfree(&phy->pdev->dev, phy->pdata);
 	devm_kfree(&phy->pdev->dev, phy);
@@ -762,6 +789,13 @@ bool tegra_usb_phy_otg_supported(struct tegra_usb_phy *phy)
 	return phy->pdata->port_otg;
 }
 EXPORT_SYMBOL_GPL(tegra_usb_phy_otg_supported);
+
+void tegra_usb_phy_pmc_disable(struct tegra_usb_phy *phy)
+{
+	if (phy->ops && phy->ops->pmc_disable)
+		phy->ops->pmc_disable(phy);
+}
+EXPORT_SYMBOL_GPL(tegra_usb_phy_pmc_disable);
 
 void tegra_usb_phy_memory_prefetch_on(struct tegra_usb_phy *phy)
 {

@@ -429,13 +429,24 @@ int tegra_dvfs_predict_millivolts(struct clk *c, unsigned long rate)
 int tegra_dvfs_set_rate(struct clk *c, unsigned long rate)
 {
 	int ret;
+	bool suspended;
 
 	if (!c->dvfs)
 		return -EINVAL;
 
-	mutex_lock(&dvfs_lock);
+	suspended = timekeeping_suspended && c->dvfs->dvfs_rail->suspended;
+	if (suspended) {
+		if (mutex_is_locked(&dvfs_lock))
+			WARN(1, "%s: Entered suspend with DVFS mutex locked\n",
+			     __func__);
+	} else {
+		mutex_lock(&dvfs_lock);
+	}
+	
 	ret = __tegra_dvfs_set_rate(c->dvfs, rate);
-	mutex_unlock(&dvfs_lock);
+
+	if (!suspended)
+		mutex_unlock(&dvfs_lock);
 
 	return ret;
 }

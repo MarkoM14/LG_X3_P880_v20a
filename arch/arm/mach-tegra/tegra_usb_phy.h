@@ -65,6 +65,7 @@ struct tegra_usb_phy_ops {
 	int (*power_off)(struct tegra_usb_phy *phy);
 	int (*power_on)(struct tegra_usb_phy *phy);
 	bool (*charger_detect)(struct tegra_usb_phy *phy);
+	void (*pmc_disable) (struct tegra_usb_phy *phy);
 };
 
 /**
@@ -82,6 +83,7 @@ struct tegra_usb_phy {
 	struct regulator *vdd_reg;
 	struct regulator *hsic_reg;
 	struct regulator *vbus_reg;
+	struct regulator *pllu_reg;
 	struct tegra_usb_phy_ops *ops;
 	struct tegra_xtal_freq *freq;
 	struct otg_transceiver *ulpi_vp;
@@ -100,6 +102,7 @@ struct tegra_usb_phy {
 	bool pmc_sleepwalk;
 	bool bus_reseting;
 	bool linkphy_init;
+	bool hot_plug;
 };
 
 int usb_phy_reg_status_wait(void __iomem *reg, u32 mask,

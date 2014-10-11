@@ -607,7 +607,7 @@ static void utmip_setup_pmc_wake_detect(struct tegra_usb_phy *phy)
 	/* config debouncer */
 	val = readl(pmc_base + PMC_USB_DEBOUNCE);
 	val &= ~UTMIP_LINE_DEB_CNT(~0);
-	val |= UTMIP_LINE_DEB_CNT(4);
+	val |= UTMIP_LINE_DEB_CNT(1);
 	writel(val, pmc_base + PMC_USB_DEBOUNCE);
 
 	/* Make sure nothing is happening on the line with respect to PMC */
@@ -1152,15 +1152,20 @@ static void utmi_phy_close(struct tegra_usb_phy *phy)
 {
 	unsigned long val;
 	void __iomem *base = phy->regs;
+	void __iomem *pmc_base = IO_ADDRESS(TEGRA_PMC_BASE);
 
 	DBG("%s inst:[%d]\n", __func__, phy->inst);
 
 	/* Disable PHY clock valid interrupts while going into suspend*/
-	if (phy->pdata->u_data.host.hot_plug) {
+	if (phy->hot_plug) {
 		val = readl(base + USB_SUSP_CTRL);
 		val &= ~USB_PHY_CLK_VALID_INT_ENB;
 		writel(val, base + USB_SUSP_CTRL);
 	}
+	
+	val = readl(pmc_base + PMC_SLEEP_CFG);
+	if (val & UTMIP_MASTER_ENABLE(phy->inst))
+		utmip_phy_disable_pmc_bus_ctrl(phy);
 
 	clk_put(phy->utmi_pad_clk);
 }
@@ -1240,7 +1245,7 @@ static int utmi_phy_irq(struct tegra_usb_phy *phy)
 		remote_wakeup = true;
 	}
 
-	if (phy->pdata->u_data.host.hot_plug) {
+	if (phy->hot_plug) {
 		val = readl(base + USB_SUSP_CTRL);
 		if ((val  & USB_PHY_CLK_VALID_INT_STS)) {
 			val &= ~USB_PHY_CLK_VALID_INT_ENB |
@@ -1460,7 +1465,7 @@ static int utmi_phy_power_off(struct tegra_usb_phy *phy)
 		utmip_setup_pmc_wake_detect(phy);
 	}
 
-	if (!phy->pdata->u_data.host.hot_plug) {
+	if (!phy->hot_plug) {
 		val = readl(base + UTMIP_XCVR_CFG0);
 		val |= (UTMIP_FORCE_PD_POWERDOWN | UTMIP_FORCE_PD2_POWERDOWN |
 			 UTMIP_FORCE_PDZI_POWERDOWN);
@@ -1478,7 +1483,7 @@ static int utmi_phy_power_off(struct tegra_usb_phy *phy)
 
 	utmi_phy_pad_power_off(phy);
 
-	if (phy->pdata->u_data.host.hot_plug) {
+	if (phy->hot_plug) {
 		bool enable_hotplug = true;
 		/* if it is OTG port then make sure to enable hot-plug feature
 		   only if host adaptor is connected, i.e id is low */
@@ -1511,7 +1516,7 @@ static int utmi_phy_power_off(struct tegra_usb_phy *phy)
 	val |= HOSTPC1_DEVLC_PHCD;
 	writel(val, base + HOSTPC1_DEVLC);
 
-	if (!phy->pdata->u_data.host.hot_plug) {
+	if (!phy->hot_plug) {
 		val = readl(base + USB_SUSP_CTRL);
 		val |= UTMIP_RESET;
 		writel(val, base + USB_SUSP_CTRL);
@@ -2087,7 +2092,6 @@ static void uhsic_phy_restore_start(struct tegra_usb_phy *phy)
 	val = readl(pmc_base + UTMIP_UHSIC_STATUS);
 
 	/* check whether we wake up from the remote resume */
-#if 0 //NV Patch (1175097) - [X3/AP33/JB/USB-HSIC] reproduce USB protocol error (-71) [START]
 	if (UHSIC_WALK_PTR_VAL & val) {
 		phy->pmc_remote_wakeup = true;
 	} else {
@@ -2096,12 +2100,6 @@ static void uhsic_phy_restore_start(struct tegra_usb_phy *phy)
 		val |= UHSIC_PRETEND_CONNECT_DETECT;
 		writel(val, base + UHSIC_CMD_CFG0);
 	}
-#else
-		DBG("%s(%d): setting pretend connect\n", __func__, __LINE__);
-		val = readl(base + UHSIC_CMD_CFG0);
-		val |= UHSIC_PRETEND_CONNECT_DETECT;
-		writel(val, base + UHSIC_CMD_CFG0);
-#endif //NV Patch (1175097) - [X3/AP33/JB/USB-HSIC] reproduce USB protocol error (-71) [END]
 }
 
 static void uhsic_phy_restore_end(struct tegra_usb_phy *phy)
@@ -2159,7 +2157,8 @@ static int hsic_rail_enable(struct tegra_usb_phy *phy)
 	int ret;
 
 	if (phy->hsic_reg == NULL) {
-		phy->hsic_reg = regulator_get(NULL, "avdd_hsic");
+		phy->hsic_reg = regulator_get(&phy->pdev->dev, "avdd_hsic");
+
 		if (IS_ERR_OR_NULL(phy->hsic_reg)) {
 			pr_err("HSIC: Could not get regulator avdd_hsic\n");
 			phy->hsic_reg = NULL;
@@ -2168,6 +2167,7 @@ static int hsic_rail_enable(struct tegra_usb_phy *phy)
 	}
 
 	ret = regulator_enable(phy->hsic_reg);
+
 	if (ret < 0) {
 		pr_err("%s avdd_hsic could not be enabled\n", __func__);
 		return ret;
@@ -2186,11 +2186,12 @@ static int hsic_rail_disable(struct tegra_usb_phy *phy)
 	}
 
 	ret = regulator_disable(phy->hsic_reg);
+
 	if (ret < 0) {
 		pr_err("HSIC regulator avdd_hsic cannot be disabled\n");
 		return ret;
 	}
-
+	
 	return 0;
 }
 
@@ -2204,7 +2205,12 @@ static int uhsic_phy_open(struct tegra_usb_phy *phy)
 	ret = hsic_rail_enable(phy);
 	if (ret < 0) {
 		pr_err("%s avdd_hsic could not be enabled\n", __func__);
-		return ret;
+//		return ret;
+//temp hack. hsic_rail_enable, regulator reports wrong when disable/enable.
+//		sysfs: cannot create duplicate 
+//		filename '/devices/platform/tegra-i2c.4/i2c-4/4-001c/max77663
+
+		return 0;
 	}
 
 	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, phy->inst);
@@ -2806,6 +2812,7 @@ static int ulpi_null_phy_restore(struct tegra_usb_phy *phy)
 			pr_warn("phy restore timeout\n");
 			return 1;
 		}
+		mdelay(1);
 	}
 
 	return 0;

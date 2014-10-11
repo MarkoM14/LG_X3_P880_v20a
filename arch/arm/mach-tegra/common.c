@@ -30,6 +30,7 @@
 #include <linux/sched.h>
 #include <linux/cpufreq.h>
 #include <linux/of.h>
+#include <linux/bootmem.h>
 
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/system.h>
@@ -129,7 +130,7 @@ int is_tegra_bootmode(void);
 void tegra_assert_system_reset(char mode, const char *cmd)
 {
 #if defined(CONFIG_TEGRA_FPGA_PLATFORM) || NEVER_RESET
-	printk("tegra_assert_system_reset() ignored.....");
+	pr_info("tegra_assert_system_reset() ignored.....");
 	do { } while (1);
 #else
 	void __iomem *reset = IO_ADDRESS(TEGRA_PMC_BASE + 0x00);
@@ -197,9 +198,10 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
 	{ "vi",		"pll_c",	0,		false },
 	{ "2d",		"pll_c",	0,		false },
 	{ "3d",		"pll_c",	0,		false },
-#else
+#else //2x_SOC
 //                    
-#ifdef CONFIG_MACH_X3
+//#ifdef CONFIG_MACH_X3
+#if 0
 	{ "pll_p",	NULL,		408000000,	true },
 	{ "pll_p_out1",	"pll_p",	9600000,	true },
 	{ "pll_p_out2",	"pll_p",	48000000,	true },
@@ -208,15 +210,15 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
 	{ "pll_p",	NULL,		0,		true },
 	{ "pll_p_out1",	"pll_p",	0,		false },
 	{ "pll_p_out2",	"pll_p",	48000000,	false },
-	{ "pll_p_out3",	"pll_p",	0,		true },
-#endif
+	{ "pll_p_out3",	"pll_p",	0,		false },
+#endif //mach
 	{ "pll_m_out1",	"pll_m",	275000000,	false },
 	{ "pll_p_out4",	"pll_p",	102000000,	true },
 	{ "sclk",	"pll_p_out4",	102000000,	true },
 	{ "hclk",	"sclk",		102000000,	true },
 	{ "pclk",	"hclk",		51000000,	true },
-#endif
-#else
+#endif //2x_SOC
+#else //SILICON_PLATFORM
 	{ "pll_p",	NULL,		216000000,	true },
 	{ "pll_p_out1",	"pll_p",	28800000,	false },
 	{ "pll_p_out2",	"pll_p",	48000000,	false },
@@ -226,7 +228,7 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
 	{ "sclk",	"pll_p_out4",	108000000,	true },
 	{ "hclk",	"sclk",		108000000,	true },
 	{ "pclk",	"hclk",		54000000,	true },
-#endif
+#endif //SILICON_PLATFORM
 #ifdef CONFIG_TEGRA_SLOW_CSITE
 	{ "csite",	"clk_m",	1000000, 	true },
 #else
@@ -244,17 +246,17 @@ static __initdata struct tegra_clk_init_table common_clk_init_table[] = {
 #if defined(CONFIG_MACH_LGE)	
 	{ "vi_sensor", "pll_p", 0, false }, //                                                   
 #endif	
-	{ "sbc1.sclk",	NULL,		40000000,	false},
-	{ "sbc2.sclk",	NULL,		40000000,	false},
-	{ "sbc3.sclk",	NULL,		40000000,	false},
-	{ "sbc4.sclk",	NULL,		40000000,	false},
+	{ "sbc1.sclk",  NULL,           40000000,       false},
+	{ "sbc2.sclk",  NULL,           40000000,       false},
+	{ "sbc3.sclk",  NULL,           40000000,       false},
+	{ "sbc4.sclk",  NULL,           40000000,       false},
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
-	{ "sbc5.sclk",	NULL,		40000000,	false},
-	{ "sbc6.sclk",	NULL,		40000000,	false},
+	{ "sbc5.sclk",  NULL,           40000000,       false},
+	{ "sbc6.sclk",  NULL,           40000000,       false},
 	{ "wake.sclk",	NULL,		40000000,	true },
 	{ "cpu_mode.sclk", NULL,	80000000,	false },
 	{ "cbus",	"pll_c",	416000000,	false },
-	{ "pll_c_out1",	"pll_c",	208000000,	false },
+	{ "pll_c_out1", "pll_c",        208000000,      false },
 	{ "mselect",	"pll_p",	102000000,	true },
 #endif
 	{ NULL,		NULL,		0,		0},
@@ -400,7 +402,7 @@ void tegra_init_cache(bool init)
 static void __init tegra_init_power(void)
 {
 #ifdef CONFIG_ARCH_TEGRA_HAS_SATA
-        tegra_powergate_partition_with_clk_off(TEGRA_POWERGATE_SATA);
+	tegra_powergate_partition_with_clk_off(TEGRA_POWERGATE_SATA);
 #endif
 #ifdef CONFIG_ARCH_TEGRA_HAS_PCIE
 	tegra_powergate_partition_with_clk_off(TEGRA_POWERGATE_PCIE);
@@ -943,7 +945,8 @@ void __init tegra_protected_aperture_init(unsigned long aperture)
  * highmem, or outside the memory map) to a physical address that is outside
  * the memory map.
  */
-void tegra_move_framebuffer(unsigned long to, unsigned long from,
+void __tegra_move_framebuffer(struct platform_device *pdev,
+	unsigned long to, unsigned long from,
 	unsigned long size)
 {
 	struct page *page;
@@ -982,6 +985,31 @@ void tegra_move_framebuffer(unsigned long to, unsigned long from,
 		iounmap(from_io);
 	}
 out:
+	iounmap(to_io);
+}
+
+void __tegra_clear_framebuffer(struct platform_device *pdev,
+				unsigned long to, unsigned long size)
+{
+	void __iomem *to_io;
+	unsigned long i;
+
+	BUG_ON(PAGE_ALIGN((unsigned long)to) != (unsigned long)to);
+	BUG_ON(PAGE_ALIGN(size) != size);
+
+	to_io = ioremap(to, size);
+	if (!to_io) {
+		pr_err("%s: Failed to map target framebuffer\n", __func__);
+		return;
+	}
+
+	if (pfn_valid(page_to_pfn(phys_to_page(to)))) {
+		for (i = 0 ; i < size; i += PAGE_SIZE)
+			memset(to_io + i, 0, PAGE_SIZE);
+	} else {
+		for (i = 0; i < size; i += 4)
+			writel(0, to_io + i);
+	}
 	iounmap(to_io);
 }
 
@@ -1139,16 +1167,101 @@ void __init tegra_ram_console_debug_init(void)
 	int err;
 
 	err = platform_device_register(&ram_console_device);
-	if (err) {
-		pr_err("%s: ram console registration failed (%d)!\n", __func__, err);
-	}
+	if (err)
+		pr_err("%s: ram console registration failed (%d)!\n",
+			__func__, err);
 }
 
 void __init tegra_release_bootloader_fb(void)
 {
 	/* Since bootloader fb is reserved in common.c, it is freed here. */
-	if (tegra_bootloader_fb_size)
+	if (tegra_bootloader_fb_size) {
 		if (memblock_free(tegra_bootloader_fb_start,
 						tegra_bootloader_fb_size))
 			pr_err("Failed to free bootloader fb.\n");
+		else
+			free_bootmem_late(tegra_bootloader_fb_start,
+						tegra_bootloader_fb_size);
+	}
 }
+
+#ifdef CONFIG_TEGRA_CONVSERVATIVE_GOV_ON_EARLYSUPSEND
+char cpufreq_default_gov[CONFIG_NR_CPUS][MAX_GOV_NAME_LEN];
+char *cpufreq_conservative_gov = "conservative";
+/*
+static char *cpufreq_sysfs_place_holder =
+		"/sys/devices/system/cpu/cpu%i/cpufreq/scaling_governor";
+static char *cpufreq_gov_conservative_param =
+		"/sys/devices/system/cpu/cpufreq/conservative/%s";
+*/
+void cpufreq_store_default_gov(void)
+{
+	unsigned int cpu = 0;
+	struct cpufreq_policy *policy;
+
+#ifndef CONFIG_TEGRA_AUTO_HOTPLUG
+	for_each_online_cpu(cpu)
+#endif
+	{
+		policy = cpufreq_cpu_get(cpu);
+		if (policy && policy->governor) {
+			sprintf(cpufreq_default_gov[cpu], "%s",
+					policy->governor->name);
+			cpufreq_cpu_put(policy);
+		} else {
+			/* No policy or no gov set for this
+			  * online cpu. If we are here, require
+			  * serious debugging hence setting
+			  * as pr_error.
+			  */
+			pr_err("No gov or No policy for online cpu:%d,"
+					, cpu);
+		}
+	}
+}
+ 
+void cpufreq_change_gov(char *target_gov)
+{
+	int ret = -EINVAL;
+	unsigned int cpu = 0;
+
+#ifndef CONFIG_TEGRA_AUTO_HOTPLUG
+	for_each_online_cpu(cpu)
+#endif
+	{
+		ret = cpufreq_set_gov(target_gov, cpu);
+		if (ret < 0)
+			/* Unable to set gov for the online cpu.
+			 * If it happens, needs to debug.
+			 */
+			pr_info("Unable to set gov:%s for online cpu:%d,"
+				, cpufreq_default_gov[cpu]
+					, cpu);
+	}
+}
+ 
+void cpufreq_restore_default_gov(void)
+{
+	int ret = -EINVAL;
+	unsigned int cpu = 0;
+  
+#ifndef CONFIG_TEGRA_AUTO_HOTPLUG
+	for_each_online_cpu(cpu)
+#endif
+	{
+		if (&cpufreq_default_gov[cpu] &&
+			strlen((const char *)&cpufreq_default_gov[cpu])) {
+			ret = cpufreq_set_gov(cpufreq_default_gov[cpu], cpu);
+			if (ret < 0)
+				/* Unable to restore gov for the cpu as
+				  * It was online on suspend and becomes
+				  * offline on resume.
+				  */
+				pr_info("Unable to restore gov:%s for cpu:%d,"
+						, cpufreq_default_gov[cpu]
+							, cpu);
+		}
+		cpufreq_default_gov[cpu][0] = '\0';
+	}
+}
+#endif /* CONFIG_TEGRA_CONVSERVATIVE_GOV_ON_EARLYSUPSEND */

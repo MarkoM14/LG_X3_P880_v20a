@@ -78,6 +78,7 @@ struct regulator_map {
 struct regulator {
 	struct device *dev;
 	struct list_head list;
+	unsigned int always_on:1;
 	int uA_load;
 	int min_uV;
 	int max_uV;
@@ -113,7 +114,7 @@ static const char *rdev_get_name(struct regulator_dev *rdev)
 	else
 		return "";
 }
-
+#if 0
 /* gets the regulator for a given consumer device */
 static struct regulator *get_device_regulator(struct device *dev)
 {
@@ -134,6 +135,17 @@ static struct regulator *get_device_regulator(struct device *dev)
 	}
 	mutex_unlock(&regulator_list_mutex);
 	return NULL;
+}
+#endif
+static int _regulator_can_change_status(struct regulator_dev *rdev)
+{
+	if (!rdev->constraints)
+		return 0;
+
+	if (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_STATUS)
+		return 1;
+	else
+		return 0;
 }
 
 /* Platform voltage constraint check */
@@ -270,7 +282,7 @@ static int regulator_check_drms(struct regulator_dev *rdev)
 	}
 	return 0;
 }
-
+/*
 static ssize_t device_requested_uA_show(struct device *dev,
 			     struct device_attribute *attr, char *buf)
 {
@@ -281,7 +293,7 @@ static ssize_t device_requested_uA_show(struct device *dev,
 		return 0;
 
 	return sprintf(buf, "%d\n", regulator->uA_load);
-}
+}	*/
 
 static ssize_t regulator_uV_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
@@ -1128,56 +1140,35 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
 	list_add(&regulator->list, &rdev->consumer_list);
 
 	if (dev) {
-		/* create a 'requested_microamps_name' sysfs entry */
-		size = scnprintf(buf, REG_STR_SIZE,
-				 "microamps_requested_%s-%s",
-				 dev_name(dev), supply_name);
-		if (size >= REG_STR_SIZE)
-			goto overflow_err;
-
 		regulator->dev = dev;
-		sysfs_attr_init(&regulator->dev_attr.attr);
-		regulator->dev_attr.attr.name = kstrdup(buf, GFP_KERNEL);
-		if (regulator->dev_attr.attr.name == NULL)
-			goto attr_name_err;
 
-		regulator->dev_attr.attr.mode = 0444;
-		regulator->dev_attr.show = device_requested_uA_show;
-		err = device_create_file(dev, &regulator->dev_attr);
-		if (err < 0) {
-			rdev_warn(rdev, "could not add regulator_dev requested microamps sysfs entry\n");
-			goto attr_name_err;
-		}
-
-		/* also add a link to the device sysfs entry */
+		/* Add a link to the device sysfs entry */
 		size = scnprintf(buf, REG_STR_SIZE, "%s-%s",
 				 dev->kobj.name, supply_name);
 		if (size >= REG_STR_SIZE)
-			goto attr_err;
+			goto overflow_err;
 
 		regulator->supply_name = kstrdup(buf, GFP_KERNEL);
 		if (regulator->supply_name == NULL)
-			goto attr_err;
+			goto overflow_err;
 
 		err = sysfs_create_link(&rdev->dev.kobj, &dev->kobj,
 					buf);
 		if (err) {
 			rdev_warn(rdev, "could not add device link %s err %d\n",
 				  dev->kobj.name, err);
-			goto link_name_err;
+			/* non-fatal */
 		}
 	} else {
 		regulator->supply_name = kstrdup(supply_name, GFP_KERNEL);
 		if (regulator->supply_name == NULL)
-			goto attr_err;
+			goto overflow_err;
 	}
 
-#ifdef CONFIG_DEBUG_FS
 	regulator->debugfs = debugfs_create_dir(regulator->supply_name,
 						rdev->debugfs);
-	if (IS_ERR_OR_NULL(regulator->debugfs)) {
+	if (!regulator->debugfs) {
 		rdev_warn(rdev, "Failed to create debugfs directory\n");
-		regulator->debugfs = NULL;
 	} else {
 		debugfs_create_u32("uA_load", 0444, regulator->debugfs,
 				   &regulator->uA_load);
@@ -1186,16 +1177,24 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
 		debugfs_create_u32("max_uV", 0444, regulator->debugfs,
 				   &regulator->max_uV);
 	}
-#endif
+
+	if (rdev->constraints->max_uV &&
+		(rdev->constraints->max_uV == rdev->constraints->min_uV)) {
+		regulator->min_uV = rdev->constraints->min_uV;
+		regulator->max_uV = rdev->constraints->max_uV;
+	}
+
+	/*
+	 * Check now if the regulator is an always on regulator - if
+	 * it is then we don't need to do nearly so much work for
+	 * enable/disable calls.
+	 */
+	if (!_regulator_can_change_status(rdev) &&
+	    _regulator_is_enabled(rdev))
+		regulator->always_on = true;
 
 	mutex_unlock(&rdev->mutex);
 	return regulator;
-link_name_err:
-	kfree(regulator->supply_name);
-attr_err:
-	device_remove_file(regulator->dev, &regulator->dev_attr);
-attr_name_err:
-	kfree(regulator->dev_attr.attr.name);
 overflow_err:
 	list_del(&regulator->list);
 	kfree(regulator);
@@ -1348,6 +1347,31 @@ struct regulator *regulator_get_exclusive(struct device *dev, const char *id)
 }
 EXPORT_SYMBOL_GPL(regulator_get_exclusive);
 
+/* Locks held by regulator_put() */
+static void _regulator_put(struct regulator *regulator)
+{
+	struct regulator_dev *rdev;
+
+	if (regulator == NULL || IS_ERR(regulator))
+		return;
+
+	rdev = regulator->rdev;
+
+	debugfs_remove_recursive(regulator->debugfs);
+
+	/* remove any sysfs entries */
+	if (regulator->dev)
+		sysfs_remove_link(&rdev->dev.kobj, regulator->supply_name);
+	kfree(regulator->supply_name);
+	list_del(&regulator->list);
+	kfree(regulator);
+
+	rdev->open_count--;
+	rdev->exclusive = 0;
+
+	module_put(rdev->owner);
+}
+
 /**
  * regulator_put - "free" the regulator source
  * @regulator: regulator source
@@ -1358,46 +1382,11 @@ EXPORT_SYMBOL_GPL(regulator_get_exclusive);
  */
 void regulator_put(struct regulator *regulator)
 {
-	struct regulator_dev *rdev;
-
-	if (regulator == NULL || IS_ERR(regulator))
-		return;
-
 	mutex_lock(&regulator_list_mutex);
-	rdev = regulator->rdev;
-
-#ifdef CONFIG_DEBUG_FS
-	debugfs_remove_recursive(regulator->debugfs);
-#endif
-
-	/* remove any sysfs entries */
-	if (regulator->dev) {
-		sysfs_remove_link(&rdev->dev.kobj, regulator->supply_name);
-		device_remove_file(regulator->dev, &regulator->dev_attr);
-		kfree(regulator->dev_attr.attr.name);
-	}
-	kfree(regulator->supply_name);
-	list_del(&regulator->list);
-	kfree(regulator);
-
-	rdev->open_count--;
-	rdev->exclusive = 0;
-
-	module_put(rdev->owner);
+	_regulator_put(regulator);
 	mutex_unlock(&regulator_list_mutex);
 }
 EXPORT_SYMBOL_GPL(regulator_put);
-
-static int _regulator_can_change_status(struct regulator_dev *rdev)
-{
-	if (!rdev->constraints)
-		return 0;
-
-	if (rdev->constraints->valid_ops_mask & REGULATOR_CHANGE_STATUS)
-		return 1;
-	else
-		return 0;
-}
 
 /* locks held by regulator_enable() */
 static int _regulator_enable(struct regulator_dev *rdev)
@@ -1481,6 +1470,9 @@ int regulator_enable(struct regulator *regulator)
 {
 	struct regulator_dev *rdev = regulator->rdev;
 	int ret = 0;
+	
+	if (regulator->always_on)
+		return 0;
 
 	if (rdev->supply) {
 		ret = regulator_enable(rdev->supply);
@@ -1559,6 +1551,9 @@ int regulator_disable(struct regulator *regulator)
 {
 	struct regulator_dev *rdev = regulator->rdev;
 	int ret = 0;
+	
+	if (regulator->always_on)
+		return 0;
 
 	mutex_lock(&rdev->mutex);
 	ret = _regulator_disable(rdev);
@@ -1605,6 +1600,9 @@ int regulator_force_disable(struct regulator *regulator)
 {
 	struct regulator_dev *rdev = regulator->rdev;
 	int ret;
+	
+	if (regulator->always_on)
+		return 0;
 
 	mutex_lock(&rdev->mutex);
 	regulator->uA_load = 0;
@@ -1643,6 +1641,9 @@ static int _regulator_is_enabled(struct regulator_dev *rdev)
 int regulator_is_enabled(struct regulator *regulator)
 {
 	int ret;
+	
+	if (regulator->always_on)
+		return 1;
 
 	mutex_lock(&regulator->rdev->mutex);
 	ret = _regulator_is_enabled(regulator->rdev);
@@ -2377,9 +2378,13 @@ int regulator_bulk_enable(int num_consumers,
 	int i;
 	int ret = 0;
 
-	for (i = 0; i < num_consumers; i++)
-		async_schedule_domain(regulator_bulk_enable_async,
-				      &consumers[i], &async_domain);
+	for (i = 0; i < num_consumers; i++) {
+		if (consumers[i].consumer->always_on)
+			consumers[i].ret = 0;
+		else
+			async_schedule_domain(regulator_bulk_enable_async,
+					      &consumers[i], &async_domain);
+	}
 
 	async_synchronize_full_domain(&async_domain);
 
@@ -2812,17 +2817,17 @@ void regulator_unregister(struct regulator_dev *rdev)
 	if (rdev == NULL)
 		return;
 
+	if (rdev->supply)
+		regulator_put(rdev->supply);
 	mutex_lock(&regulator_list_mutex);
-#ifdef CONFIG_DEBUG_FS
 	debugfs_remove_recursive(rdev->debugfs);
-#endif
+//	flush_work(&rdev->disable_work.work);
 	WARN_ON(rdev->open_count);
 	unset_regulator_supplies(rdev);
 	list_del(&rdev->list);
-	if (rdev->supply)
-		regulator_put(rdev->supply);
-	device_unregister(&rdev->dev);
 	kfree(rdev->constraints);
+	
+	device_unregister(&rdev->dev);
 	mutex_unlock(&regulator_list_mutex);
 }
 EXPORT_SYMBOL_GPL(regulator_unregister);

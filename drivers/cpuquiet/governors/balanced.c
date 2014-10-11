@@ -189,7 +189,7 @@ static unsigned int rt_profile_1[] = {
 static unsigned int rt_profile_2[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
 //	5,  13, 14, UINT_MAX
-	12, 16, 19, UINT_MAX
+	13, 17, 21, UINT_MAX
 };
 
 static unsigned int rt_profile_disable[] = {
