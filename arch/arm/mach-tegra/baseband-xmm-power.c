@@ -358,8 +358,6 @@ void baseband_xmm_power_switch(bool power_on)
 }
 EXPORT_SYMBOL_GPL(baseband_xmm_power_switch);
 
-extern bool x3_hddisplay_on;
-
 /* Do the work for AP/CP initiated L2->L0 */
 static void xmm_power_l2_resume(void)
 {

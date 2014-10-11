@@ -2366,7 +2366,6 @@ int is_cp_crash = 0;    //cpwatcher
 
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
 static struct input_dev *recovery_dev;
-extern bool enum_success; //baseband-xmm-power.c
 unsigned long ril_recovery_cnt = 0;
 module_param(ril_recovery_cnt, ulong, 0644);
 MODULE_PARM_DESC(ril_recovery_cnt,
@@ -2479,10 +2478,13 @@ static void ts_ldisc_close(struct tty_struct *tty)
 
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
 	//TODO is there a better way to wake ril?
-	input_report_key(recovery_dev, KEY_POWER, 1);
-	input_report_key(recovery_dev, KEY_POWER, 0);
-	input_sync(recovery_dev);
-	TS0710_PRINTK("Input power_key sendt to wake RIL");
+	//Only send power_key when screen is off
+	if (!x3_hddisplay_on) {
+		input_report_key(recovery_dev, KEY_POWER, 1);
+		input_report_key(recovery_dev, KEY_POWER, 0);
+		input_sync(recovery_dev);
+		TS0710_PRINTK("Input power_key sendt to wake RIL");
+	}
 
 	//reset baseband_xmm
 	baseband_xmm_power_switch(0);

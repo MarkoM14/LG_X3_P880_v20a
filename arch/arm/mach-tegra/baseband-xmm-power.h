@@ -33,6 +33,9 @@ extern unsigned long modem_ver;
 extern unsigned long modem_flash;
 extern unsigned long modem_pm;
 
+extern bool enum_success;
+extern bool x3_hddisplay_on;
+
 enum baseband_type {
 	BASEBAND_XMM,
 };

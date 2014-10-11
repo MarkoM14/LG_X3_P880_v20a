@@ -90,7 +90,7 @@ static int debug_enable_flag = 0;//Release
 #define FALSE 0x00 
 #endif
 
-#define CPWATCHER_DELAY_TIME msecs_to_jiffies(5)
+#define CPWATCHER_DELAY_TIME msecs_to_jiffies(50)
 
 static int cp_crash_int_pin		= TEGRA_GPIO_PS5;		//Rev.C
 
@@ -183,7 +183,6 @@ static irqreturn_t cpwatcher_irq_handler(int irq, void *dev_id)
 		printk("[CPW] %s()\n", __FUNCTION__);
 		//NvOdmGpioGetState(cpwatcher_dev.hGpio, cpwatcher_dev.hCP_status, &pinValue);
 		schedule_delayed_work(&dev->delayed_work_cpwatcher, CPWATCHER_DELAY_TIME);
-		return IRQ_HANDLED;
 	}
 	return IRQ_HANDLED;
 }
@@ -210,7 +209,7 @@ static void cpwatcher_work_func(struct work_struct *wq)
 				do {
 					printk("[CPW] CP Crash : lge_is_ril_recovery_mode_enabled() = 1 ...change to CP_USB mode\n");
 					muic_proc_set_cp_usb_force();
-					msleep(300);
+					msleep(400);
 					status = gpio_get_value(cp_crash_int_pin);
 					printk("[CPW] cp_crash_int_pin status: %d (1=Modem is OK)\n", status);
 					retry--;
