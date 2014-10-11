@@ -990,7 +990,7 @@ static bool is_emc_bridge(void)
 static int tegra_emc_suspend_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
-	printk("%s start [%d]\n", __func__, event);  //for debug
+	printk("%s start [%lu]\n", __func__, event);  //for debug
 
 	if (event != PM_SUSPEND_PREPARE)
 		return NOTIFY_OK;
@@ -1013,7 +1013,7 @@ static struct notifier_block tegra_emc_suspend_nb = {
 static int tegra_emc_resume_notify(struct notifier_block *nb,
 				unsigned long event, void *data)
 {
-	printk("%s start [%d]\n", __func__, event);  //for debug
+	printk("%s start [%lu]\n", __func__, event);  //for debug
 
 	if (event != PM_POST_SUSPEND)
 		return NOTIFY_OK;

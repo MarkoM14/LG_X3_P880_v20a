@@ -37,24 +37,10 @@
 #include <linux/mfd/max77663-core.h>
 #endif
 
-//                                                    
-#if 0
-#define USB_MANUFACTURER_NAME	"NVIDIA"
-#define USB_PRODUCT_ID_RNDIS	0x7103
-#define USB_VENDOR_ID			0x0955
-#endif//
-//                                            
-
 static struct usb_mass_storage_platform_data tegra_usb_fsg_platform = {
-#if 1
 	.nluns		= 2,
 	.vendor  = USB_MANUFACTURER_NAME,
 	.product = USB_DEVICE_NAME,
-#else
-	.vendor = "NVIDIA",
-	.product = "Tegra 3",
-	.nluns = 1,
-#endif//	
 };
 
 struct platform_device tegra_usb_fsg_device = {
@@ -64,43 +50,6 @@ struct platform_device tegra_usb_fsg_device = {
 		.platform_data = &tegra_usb_fsg_platform,
 	},
 };
-
-//                                                                
-#if CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET
-static char *usb_functions_all     [] = {
-#ifdef CONFIG_USB_ANDROID_MTP
-	"mtp",
-#endif
-#ifdef CONFIG_USB_ANDROID_ACCESSORY
-        "accessory",
-#endif
-	"acm",
-	"serial",
-	"ecm",
-	"usb_mass_storage",
-	"adb"
-};
-static char *usb_functions_PID_61a6[] = {    "usb_mass_storage",    "adb",};
-#ifdef CONFIG_USB_ANDROID_MTP
-static char *usb_functions_PID_61f9[] = {    "mtp",   "adb",   };
-#endif
-static char *usb_functions_PID_61fa[] = {    "acm",   "serial",   "usb_mass_storage", "adb",};
-static char *usb_functions_PID_61fc[] = {    "acm",   "serial",   "ecm",  "usb_mass_storage" , "adb", };
-static char *usb_functions_PID_61fd[] = {    "acm",   "serial",   "ecm",  "usb_mass_storage",};
-static char *usb_functions_PID_61c5[] = {    "usb_mass_storage",};
-
-#ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
-/* CDROM storage only mode(Autorun default mode) */
-static char *usb_functions_PID_91c8[] = {    "usb_cdrom_storage",};
-static char *usb_functions_lge_charge_only[] =  { "charge_only",};
-#endif
-
-#ifdef CONFIG_USB_ANDROID_ACCESSORY
-static char *usb_functions_accessory[] = {    "accessory",};
-static char *usb_functions_accessory_adb[] = {"accessory","adb",};
-#endif
-
-#else   //                                     
 
 static char *usb_functions_mtp_ums[] = { "mtp", "usb_mass_storage" };
 static char *usb_functions_adb[] = { "mtp", "adb", "usb_mass_storage" };
@@ -126,84 +75,8 @@ static char *usb_functions_all[] = {
 	"adb",
 	"usb_mass_storage"
 };
-#endif  //                                     
 
 static struct android_usb_product usb_products[] = {
-#if   CONFIG_USB_SUPPORT_LGE_ANDROID_GADGET  
-#ifdef CONFIG_USB_ANDROID_CDC_ECM
-	{
-		.product_id 	= 0x61fc,
-		.num_functions	= ARRAY_SIZE(usb_functions_PID_61fc),
-		.functions		= usb_functions_PID_61fc,
-	},
-	{
-		.product_id = 0x61FD,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_61fd),
-		.functions = usb_functions_PID_61fd,
-	},
-#endif
-	{
-		.product_id 	= 0x61fa,
-		.num_functions	= ARRAY_SIZE(usb_functions_PID_61fa),
-		.functions				= usb_functions_PID_61fa,
-	},
-	{
-		.product_id = 0x61a6,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_61a6),
-		.functions = usb_functions_PID_61a6,
-	},
-#ifdef CONFIG_USB_ANDROID_MTP
-	{
-		.product_id = 0x61C7,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_61c7),
-		.functions = usb_functions_PID_61c7,
-	},
-	{
-		.product_id = 0x61F9,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_61f9),
-		.functions = usb_functions_PID_61f9,
-	},
-#endif
-#ifdef CONFIG_USB_ANDROID_ACCESSORY
-	/* NOTE : USB Accessory mode has google's vid and pid */
-	{
-		.vendor_id		= USB_ACCESSORY_VENDOR_ID,
-		.product_id 	= USB_ACCESSORY_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_accessory),
-		.functions		= usb_functions_accessory,
-	},
-	{
-		.vendor_id		= USB_ACCESSORY_VENDOR_ID,
-		.product_id 	= USB_ACCESSORY_ADB_PRODUCT_ID,
-		.num_functions	= ARRAY_SIZE(usb_functions_accessory_adb),
-		.functions		= usb_functions_accessory_adb,
-	},
-#endif
-	{
-		.product_id = 0x61C5,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_61c5),
-		.functions = usb_functions_PID_61c5,
-	},
-#ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
-	{
-		/* FIXME: This pid is just for test */
-		.product_id = 0x91C8,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_91c8),
-		.functions = usb_functions_PID_91c8,
-	},
-	{
-		.product_id = 0x61A6,
-		.num_functions = ARRAY_SIZE(usb_functions_PID_61a6),
-		.functions = usb_functions_PID_61a6,
-	},
-	{
-		/* Charge only doesn't have no specific pid */
-		.product_id = 0xFFFF,
-		.num_functions = ARRAY_SIZE(usb_functions_lge_charge_only),
-		.functions = usb_functions_lge_charge_only,
-	},
-#endif
-#else   //                                     
 	{
 		.product_id     = 0x7102,
 		.num_functions  = ARRAY_SIZE(usb_functions_mtp_ums),
@@ -240,7 +113,6 @@ static struct android_usb_product usb_products[] = {
 		.functions      = usb_functions_rndis_adb,
 	},
 #endif
-#endif  //                                     
 };
 
 /* standard android USB platform data */
@@ -252,8 +124,8 @@ struct android_usb_platform_data andusb_plat = {
 	.serial_number			= NULL,
 	.num_products = ARRAY_SIZE(usb_products),
 	.products = usb_products,
-	.num_functions = ARRAY_SIZE(usb_functions_all),  //                                                         
-	.functions = usb_functions_all,                  //                                                         
+	.num_functions = ARRAY_SIZE(usb_functions_all),
+	.functions = usb_functions_all,
 };
 
 struct platform_device androidusb_device = {

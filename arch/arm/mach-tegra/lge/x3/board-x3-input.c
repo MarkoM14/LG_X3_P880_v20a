@@ -47,7 +47,6 @@
 #include <mach-tegra/devices.h>
 #include <mach-tegra/gpio-names.h>
 
-
 #if defined( LGE_SENSOR_GYROSCOPE)
 #include <linux/k3g.h>
 #endif
@@ -192,7 +191,6 @@ static struct p940_synaptics_platform_data synaptics_t3000_platform_data = {
 	.power		= &touch_power_control,
 };
 
-//                                                           
 #elif defined (CONFIG_TOUCHSCREEN_SYNAPTICS_COMMON)
 
 static int touch_1V8_en = TEGRA_GPIO_PX4;
@@ -218,7 +216,7 @@ int touch_power_control(int on)
 	return 1;
 }
 
-int touch_power_init(void)
+int touch_power_init(int on)
 {
 	int ret = 0;
 
@@ -261,7 +259,7 @@ int touch_power_init(void)
 	
        	printk("[TOUCH] %s : successful\n", __func__);
 
-	return 0;
+	return 1;
 
 failed_second:
 	printk(KERN_ERR "%s(%d) failed\n", __func__, __LINE__);
@@ -325,7 +323,6 @@ struct touch_platform_data  synaptics_pdata = {
 };
 #endif
 
-//                                                                
 #if defined(CONFIG_SENSORS_APDS990X)
 
 static int prox_ldo_en = TEGRA_GPIO_PX1;
@@ -365,29 +362,16 @@ static s32 x3_apds990x_power_init(void)
                 gpio_free(prox_ldo_en);
                 return ret;
         }       
-	
-	/* PORXI_LDO_EN */
-	//tegra_pinmux_set_pullupdown(TEGRA_PINGROUP_SDMMC3_DAT7, TEGRA_PUPD_NORMAL);
-	
+
 	printk(KERN_DEBUG "PROX_Sensor[3] : Proximity LDO Enable before toggle "
 		"at BOARD: %d, Line[%d]\n", 
 	gpio_get_value(prox_ldo_en), __LINE__);
+
+	return 0;
 }
 
-/*
-int sensor_proximity_power_set(unsigned char onoff)
-{
-	gpio_set_value(prox_ldo_en, onoff);
-	printk(KERN_DEBUG "PROX[%s] Proximity LDO Enable before toggle "
-		"at BOARD: %d, Line[%d]\n", 
-	__func__,gpio_get_value(prox_ldo_en), __LINE__);
-	return 0;	
-}
-*/
 static int prox_common_power_set(unsigned char onoff, int sensor)
 {
-//	int ret = -EINVAL;
-
 	gpio_set_value(prox_ldo_en,onoff);
 	
 	printk(" prox_common_power_set : %d, Line[%d]\n",	gpio_get_value(prox_ldo_en),__LINE__);
@@ -406,6 +390,7 @@ int prox_power_on(int sensor)
 	ret = prox_common_power_set(1, sensor);
 	return ret;
 }
+
 int prox_power_off(int sensor)
 {
     int ret = 0;
@@ -434,20 +419,15 @@ static s32 x3_apds990x_irq_set(void)
                 gpio_free(TEGRA_GPIO_PK2);
                 return ret;
         }
-}
 
+        return ret;
+}
 #endif  
-//                                                                                 
 
 struct lge_sensor_int_gpio{
 	s16 num;
 	const char *name;
-	//unsigned config;
 };
-
-
-
-
 
 #if defined(MPU_SENSORS_MPU6050B1)
 
@@ -457,10 +437,8 @@ static s32 x3_mpuirq_init(void)
 {
 	s32 ret = 0;
 
-//SENSOR_LDO_EN pin Enable for GYRO 3.0V
-
-	if(x3_get_hw_rev_pcb_version() < hw_rev_pcb_type_D)
-	{
+	//SENSOR_LDO_EN pin Enable for GYRO 3.0V
+	if (x3_get_hw_rev_pcb_version() < hw_rev_pcb_type_D) {
 	tegra_gpio_enable(sensors_ldo_en);
 
 	ret = gpio_request(sensors_ldo_en, "SENSOR_LDO_EN");
@@ -500,11 +478,11 @@ static s32 x3_mpuirq_init(void)
 		return ret;
 	}
 
+	return 0;
 }
 
 #endif  //MPU_SENSORS_MPU6050B1
 
-//                                                       
 #if defined (CONFIG_SENSORS_APDS990X)
 
 struct apds990x_proximity_platform_data x3_prox_data = {
@@ -530,17 +508,6 @@ struct mpu_platform_data mpu6050_data = {
 
 };
 
-/* accel */
-/*
-struct ext_slave_platform_data inv_mpu6050_accel_data = {
-                .adapt_num		  = 0,
-                .bus              = EXT_SLAVE_BUS_SECONDARY,
-                .orientation      = { 0,  1,  0,
-                                      -1,  0,  0,
-                                      0,  0, 1 },
-};
-*/  //include in mpu6050
-
 /* compass */
 struct ext_slave_platform_data mpu_compass_data = {
                 .address		  = 0x0E,
@@ -550,30 +517,17 @@ struct ext_slave_platform_data mpu_compass_data = {
                                       0,  1,  0,
                                       0,  0,  1},
 };
-
-//for Sensor of Rev.D Power Board
-
 #endif
-
-
-
-
-
 
 int __init x3_sensor_input_init(void)
 {
-
 #ifdef MPU_SENSORS_MPU6050B1
 	x3_mpuirq_init();
 #endif
-		
-
 #ifdef CONFIG_SENSORS_APDS990X
 	x3_apds990x_power_init();
 	x3_apds990x_irq_set();
 #endif	
 
+	return 0;
 }
-	
-
-//                                                                               

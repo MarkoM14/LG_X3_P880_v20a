@@ -33,7 +33,6 @@
 #include <linux/of_platform.h>
 #include <linux/of_gpio.h>
 #include <linux/spinlock.h>
-#include <linux/input/lge_touch_core.h>
 #define FACTORY_AT_COMMAND_GKPD
 //                                                                                                                                       
 
@@ -920,8 +919,6 @@ static int gpio_keys_probe(struct platform_device *pdev)
 	}
 
 	device_init_wakeup(&pdev->dev, wakeup);
-
-	double_tap_setdev(input);
 
 	return 0;
 

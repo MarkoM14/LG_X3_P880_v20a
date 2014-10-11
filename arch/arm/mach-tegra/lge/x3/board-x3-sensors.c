@@ -724,11 +724,12 @@ static struct i2c_board_info imx119_i2c2_boardinfo[] = {
 static int x3_cam_init(void)
 {
 	int ret;
-	int i;
 
 	pr_info("%s:++\n", __func__);
 
-#ifdef CONFIG_STEREO_CAMERA_USE //                        
+#ifdef CONFIG_STEREO_CAMERA_USE 
+	int i;
+	
 	memset(ent_vicsi_pwr, 0, sizeof(ent_vicsi_pwr));
 	for (i = 0; i < ARRAY_SIZE(x3_cam_gpio_data); i++) {
 		ret = gpio_request(x3_cam_gpio_data[i].gpio,

@@ -205,11 +205,13 @@ static __initdata struct tegra_clk_init_table x3_clk_i2s2_table[] = {
 	{ NULL,		NULL,		0,		0},
 };
 
+#if 0
 static __initdata struct tegra_clk_init_table x3_clk_i2s4_table[] = {
 	/* name		parent		rate		enabled */
 	{ "i2s4",	"pll_a_out0",	0,		false},
 	{ NULL,		NULL,		0,		0},
 };
+#endif
 
 #if defined(CONFIG_BD_ADDRESS)
 static struct platform_device bd_address_device = {
@@ -332,13 +334,13 @@ static struct platform_device tegra_camera = {
 	.id = -1,
 };
 
+/*
 static struct resource ram_console_resources[] = {
 	{
 		.flags = IORESOURCE_MEM,
 	},
 };
 
-/*
 static struct platform_device ram_console_device = {
 	.name 		= "ram_console",
 	.id 		= -1,
@@ -673,7 +675,6 @@ static void __init tegra_x3_init(void)
 	x3_i2c_init();
 	x3_regulator_init();
 	tegra_io_dpd_init();
-	x3_sdhci_init();
 	x3_usb_init();
 //                                   
 	tegra_thermal_init(&thermal_data, throttle_list, ARRAY_SIZE(throttle_list));
@@ -685,11 +686,9 @@ static void __init tegra_x3_init(void)
 	x3_kbc_init();
 	//x3_touch_init();
 	x3_gps_init();
-if(is_tegra_bootmode())
-{
 	x3_baseband_init();
-}
 	x3_panel_init();
+	x3_sdhci_init();
 	x3_audio_init();
 #if defined(CONFIG_BCM4330_RFKILL)
 	x3_bt_rfkill();

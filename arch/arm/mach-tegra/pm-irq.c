@@ -46,7 +46,7 @@
 
 #define PMC_MAX_WAKE_COUNT 64
 
-extern unsigned long long wake_status_backup;//                                                                  
+//extern unsigned long long wake_status_backup;//                                                                  
 
 static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
 
@@ -240,7 +240,7 @@ static void tegra_pm_irq_syscore_resume_helper(
 static void tegra_pm_irq_syscore_resume(void)
 {
 	unsigned long long wake_status = read_pmc_wake_status();
-	wake_status_backup = wake_status; //                                                                  
+//	wake_status_backup = wake_status; //                                                                  
 
 	pr_info(" legacy wake status=0x%x\n", (u32)wake_status);
 	tegra_pm_irq_syscore_resume_helper((unsigned long)wake_status, 0);

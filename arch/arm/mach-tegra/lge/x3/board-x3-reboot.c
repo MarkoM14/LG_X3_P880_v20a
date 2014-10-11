@@ -92,7 +92,7 @@ static int x3_reboot_notify(struct notifier_block *nb,
         rsbuf[0] ='w';
         write_cmd_reserved_buffer(rsbuf,3);
 
-        printk("x3_reboot_notify : rsbuf = %s [%d]\n", (unsigned char *)rsbuf, event);
+        printk("x3_reboot_notify : rsbuf = %s [%lu]\n", (unsigned char *)rsbuf, event);
         switch (event) {
         case SYS_RESTART:
 //                                                           

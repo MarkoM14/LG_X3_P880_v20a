@@ -38,7 +38,6 @@
 #include <linux/video/backlight/lm3533_bl.h>
 
 #if defined(CONFIG_MAX8971_CHARGER)
-//                                          
 #include <linux/power/max8971-charger.h>
 #endif
 
@@ -46,22 +45,7 @@
 #include <linux/max17040_battery.h>
 #endif
 
-/*                                                                        */
-#if defined(CONFIG_REGULATOR_CAM_SUBPMIC_LP8720) 
-#include <linux/regulator/lp8720.h>
-static struct lp8720_platform_data lp8720_pdata = {
-	.en_gpio_num         = TEGRA_GPIO_PBB4 /*220*/,
-};
-#endif
-
-#if 0 //                                                       
-#include <media/lm3559_flash_led.h>
-static struct lm3559_flash_led_platform_data flash_led_data = {
-	.gpio_hwen = TEGRA_GPIO_PBB3,
-};
-#endif
-
-#if defined(CONFIG_ADC_TSC2007)  //                              
+#if defined(CONFIG_ADC_TSC2007)
 #include <linux/tsc2007_adc.h>
 #endif
 
@@ -79,33 +63,19 @@ struct lge_backlight_platform_data {
 	int max_brightness;
 };
 
-//                                             
-
 struct lm3533_bl_platform_data lm3533_pdata = {
 	.hwen_gpio		= TEGRA_GPIO_PN6,
-	.max_current		= 0x17, // YJChae check point!!
+	.max_current		= 0x17,
 	.min_brightness		= 0x14,
 	.default_brightness	= 0x71,
 	.max_brightness		= 0xFF,
 	.dimming_brightness	= 0x07,
-/*
-	.gpio = 49,
-	.max_current = 0x17, 
-	.min_brightness = 0x14, 
-	.default_brightness = 0x71, 
-	.max_brightness = 0xFF,//0x71, 
-	.dimming_brightness = 0x07, // this value should be changed by shoogi.
-*/
 };
 
-
-
 #if defined(CONFIG_MAX8971_CHARGER)
-//                                          
-
 #define MAX8971_IRQB_GPIO	TEGRA_GPIO_PJ2
 
-static void max8971_init_gpio(void)
+static int max8971_init_gpio(void)
 {
 	int ret = 0;
 	printk("max8971_init_gpio\n");
@@ -130,11 +100,7 @@ static void max8971_init_gpio(void)
 }
 
 struct max8971_platform_data max8971_data = {
-//                              
-//                                                                          
         .chgcc_400      = 0x08,         // 400mA
-//                                                                          
-
 	.chgcc_usb500	= 0x0A,		// Fast Charge Current	// USB charging current 500mA
 	.chgcc_ta	= 0x12,//0x18,		// Fast Charge Current	// TA charging current 1200mA
 	.chgcc_factory 	= 0x1F, 	// Fast Charge Current	// TA charging current 1550mA
@@ -144,7 +110,7 @@ struct max8971_platform_data max8971_data = {
 	.fchgtime	= 0x00,		// Fast Charge Time			//5hrs	
 	.chgrstrt	= 0x00,		// Fast Charge Restart Threshold			//150mV
 	
-	.dcilmt_usb500	= 0x14,//0x14,		// Input Current Limit Selection	//500mA
+	.dcilmt_usb500	= 0x18,		// Input Current Limit Selection	//500mA
 	//.dcilmt_ta	= 0x28,//0x30,		// Input Current Limit Selection		//1200mA
 	.dcilmt_ta		= 0x30,//0x30,//0x30,		// Input Current Limit Selection		//1200mA
 	.dcilmt_factory = 0x3F,		// Input Current Limit Selection		//1550mA
@@ -171,7 +137,6 @@ struct max8971_platform_data max8971_data = {
 	.gpio_init	= max8971_init_gpio,
 };
 #endif /*CONFIG_MAX8971_CHARGER*/
-
 
 #if defined(CONFIG_MAX14526_MUIC)
 //#define MUIC_GPIO	TEGRA_GPIO_PX6
@@ -232,7 +197,6 @@ static int max14526_enable_charger(muic_mode_t mode)
 			return -EINVAL;
 	}
 
-	//return psy->set_property(psy, POWER_SUPPLY_PROP_ONLINE, &value);
 	return psy->set_property(psy, POWER_SUPPLY_PROP_STATUS, &value);
 }
 
@@ -243,7 +207,6 @@ struct max14526_platform_data max14526_pdata = {
 	.gpio			= MUIC_GPIO,
 };
 #endif	// CONFIG_MAX14526_MUIC
-
 
 #if defined(CONFIG_TSPDRV)
 struct tspdrv_i2c_platform_data tspdrv_i2c_pdata = {
