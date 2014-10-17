@@ -97,6 +97,7 @@ DEFINE_MUTEX(shared_lock);
 /*                                 */
 #if defined(CONFIG_MACH_LGE)
 extern struct lcd_gamma_rgb cmdlineRGBvalue;
+#if 0
 static u8 hitach_gammalut[256] = {
 	/*Q-gate 1st*/
 	/*0x00, 0x01, 0x02, 0x02, 0x03, 0x04, 0x05, 0x05,
@@ -165,8 +166,10 @@ static u8 hitach_gammalut[256] = {
 	0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf6, 0xf7,
 	0xf8, 0xf9, 0xfa, 0xfb, 0xfc, 0xfd, 0xfe, 0xff,
 };
+#endif
 
-//                                                
+//
+extern bool x3_hddisplay_on;
 int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n);  
 struct tegra_dc *tegra_dc_gamma;
 //static void tegra_dc_set_lut(struct tegra_dc *dc, struct tegra_dc_win* win);
@@ -177,7 +180,9 @@ int dc_set_gamma_rgb(int window_n, int red,int green,int blue)
 	struct tegra_dc_win *win;
 	struct tegra_dc_win *dcwins[DC_N_WINDOWS];  
 
-	printk("%s start \n" ,__func__);
+	/*Only attempt to apply if the display is on, or a panic will happen.*/
+	if (x3_hddisplay_on) {
+		printk("%s start \n" ,__func__);
 		for (i = 0; i < DC_N_WINDOWS; i++) {
 			win = &tegra_dc_gamma->windows[i];
 			tegra_dc_writel(tegra_dc_gamma, WINDOW_A_SELECT << i,
@@ -192,8 +197,11 @@ int dc_set_gamma_rgb(int window_n, int red,int green,int blue)
 			tegra_dc_set_lut(tegra_dc_gamma, win);
 			dcwins[i] = tegra_dc_get_window(tegra_dc_gamma, i);  
 		}
-	tegra_dc_update_windows(dcwins, DC_N_WINDOWS); 
-	printk("%s end \n" ,__func__);
+		tegra_dc_update_windows(dcwins, DC_N_WINDOWS); 
+		printk("%s end \n" ,__func__);
+	} else
+		printk("%s: Tried to apply gamma_rgb settings when LCD was off\n",
+			__func__);
 	return 0;
 }
 
@@ -202,20 +210,25 @@ void dc_set_gamma_lut(void)
 	int i;
 	struct tegra_dc_win *dcwins[DC_N_WINDOWS];
 
-	printk("%s start \n" ,__func__);
-	for (i = 0; i < DC_N_WINDOWS; i++) {
-		struct tegra_dc_win *win = &tegra_dc_gamma->windows[i];
-		tegra_dc_writel(tegra_dc_gamma, WINDOW_A_SELECT << i,
-				DC_CMD_DISPLAY_WINDOW_HEADER);
-		win->ppflags |= TEGRA_WIN_PPFLAG_CP_ENABLE;
-		memcpy(&tegra_dc_gamma->windows[i].lut, &cmdlineRGBvalue.lut,
-			sizeof(tegra_dc_gamma->windows[i].lut));
-		tegra_dc_set_lut(tegra_dc_gamma, win);
-		dcwins[i] = tegra_dc_get_window(tegra_dc_gamma, i);
-	}
+	/*Only attempt to apply if the display is on, or a panic will happen.*/
+	if (x3_hddisplay_on) {
+		printk("%s start \n" ,__func__);
+		for (i = 0; i < DC_N_WINDOWS; i++) {
+			struct tegra_dc_win *win = &tegra_dc_gamma->windows[i];
+			tegra_dc_writel(tegra_dc_gamma, WINDOW_A_SELECT << i,
+					DC_CMD_DISPLAY_WINDOW_HEADER);
+			win->ppflags |= TEGRA_WIN_PPFLAG_CP_ENABLE;
+			memcpy(&tegra_dc_gamma->windows[i].lut, &cmdlineRGBvalue.lut,
+				sizeof(tegra_dc_gamma->windows[i].lut));
+			tegra_dc_set_lut(tegra_dc_gamma, win);
+			dcwins[i] = tegra_dc_get_window(tegra_dc_gamma, i);
+		}
 
-	tegra_dc_update_windows(dcwins, DC_N_WINDOWS);
-	printk("%s end \n" ,__func__);
+		tegra_dc_update_windows(dcwins, DC_N_WINDOWS);
+		printk("%s end \n" ,__func__);
+	} else
+		printk("%s: Tried to apply gamma_lut settings when LCD was off\n",
+			__func__);
 }
 #endif
 /*                                 */
@@ -1956,7 +1969,8 @@ static ssize_t switch_modeset_print_mode(struct switch_dev *sdev, char *buf)
 }
 #endif
 
-static int tegra_dc_probe(struct nvhost_device *ndev)
+static int tegra_dc_probe(struct nvhost_device *ndev,
+	struct nvhost_device_id *id_table)
 {
 	struct tegra_dc *dc;
 	struct tegra_dc_mode *mode;

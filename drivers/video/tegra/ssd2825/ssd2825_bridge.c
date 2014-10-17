@@ -921,6 +921,13 @@ static ssize_t display_gamma_lut_store(struct device *dev,
 		struct device_attribute *attr,
 		const char *buf, size_t size)
 {
+	
+	int i;     // Index in lut
+	int j = 0; // Index in buf
+
+	// Write r, g and b contigiously in a single loop.
+	u8 *lut = (u8*) &cmdlineRGBvalue.lut;
+	
 	// Minimum length of 3 * 256 space separated digits
 	if (size < 2 * 3 * 256 - 1) {
 		return -EINVAL;
@@ -934,12 +941,6 @@ static ssize_t display_gamma_lut_store(struct device *dev,
 	// Include one of the NULs provided by the kernel so that user space
 	// isn't forced to put a space or NUL.
 	size++;
-
-	int i;     // Index in lut
-	int j = 0; // Index in buf
-
-	// Write r, g and b contigiously in a single loop.
-	u8 *lut = (u8*) &cmdlineRGBvalue.lut;
 
 	// Make sure we scan at most 4 bytes each iteration (3 digits + space)
 	// to avoid running past the end of buf.
