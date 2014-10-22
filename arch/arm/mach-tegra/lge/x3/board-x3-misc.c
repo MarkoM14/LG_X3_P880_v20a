@@ -98,24 +98,23 @@ static int max8971_init_gpio(void)
 
 	return ret;
 }
-
+//chgcc=  (mA-250)/50+5=value
 struct max8971_platform_data max8971_data = {
         .chgcc_400      = 0x08,         // 400mA
 	.chgcc_usb500	= 0x0A,		// Fast Charge Current	// USB charging current 500mA
-	.chgcc_ta	= 0x12,//0x18,		// Fast Charge Current	// TA charging current 1200mA
+	.chgcc_ta	= 0x18,		// Fast Charge Current	// TA charging current 1200mA
 	.chgcc_factory 	= 0x1F, 	// Fast Charge Current	// TA charging current 1550mA
-	.chgcc_mhl400	= 0x08, 	//                                                                                                            
-	.chgcc_soc700	= 0x0E,	//Charging 700mA During  10% Under SOC Contions
+	.chgcc_mhl400	= 0x08, 	// 400mA                                                                                                         
+	.chgcc_soc700	= 0x0E,		//Charging 700mA During  10% Under SOC Contions
 	
-	.fchgtime	= 0x00,		// Fast Charge Time			//5hrs	
-	.chgrstrt	= 0x00,		// Fast Charge Restart Threshold			//150mV
-	
-	.dcilmt_usb500	= 0x18,		// Input Current Limit Selection	//500mA
-	//.dcilmt_ta	= 0x28,//0x30,		// Input Current Limit Selection		//1200mA
-	.dcilmt_ta		= 0x30,//0x30,//0x30,		// Input Current Limit Selection		//1200mA
+	.fchgtime	= 0x03, //0x00,	// Fast Charge Time			//3hrs	
+	.chgrstrt	= 0x00,		// Fast Charge Restart Threshold	//150mV
+//dcilmt=  (mA-250)/50+5=value
+	.dcilmt_usb500	= 0x18,		// Input Current Limit Selection  //1200mA
+	.dcilmt_ta	= 0x30,		// Input Current Limit Selection  //2400mA
 	.dcilmt_factory = 0x3F,		// Input Current Limit Selection		//1550mA
 	.dcilmt_mhl400	= 0x14,//                                                                                                         
-	.dcilmt_soc700	= 0x1D,	//Charging 700mA During  10% Under SOC Contions
+	.dcilmt_soc700	= 0x1D,		//Charging 700mA During  10% Under SOC Contions
 	
 	.topofftime	= 0x00,		// Top Off Timer Setting				//30min
 	.topofftshld	= 0x03,		// Top Off Threshold					//200mA
