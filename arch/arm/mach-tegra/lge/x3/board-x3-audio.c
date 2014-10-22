@@ -223,8 +223,8 @@ static struct tegra_asoc_platform_data x3_audio_pdata = {
 		.is_i2s_master	= 1,
 		.i2s_mode	= TEGRA_DAIFMT_DSP_A,
 		.sample_size	= 16,
-		.rate		= 8000,
-		.channels	= 1,
+		.rate		= 16000,
+		.channels	= 2,
 	},
 	.hifi_param 	= {
 		.i2s_num = 0,
@@ -233,8 +233,8 @@ static struct tegra_asoc_platform_data x3_audio_pdata = {
 	},
 	.bt_param		= {
 		.i2s_num = 3,
-		.rate = SNDRV_PCM_RATE_8000,
-		.channels = 1,
+		.rate = SNDRV_PCM_RATE_16000,
+		.channels = 2,
 	},
 };
 
