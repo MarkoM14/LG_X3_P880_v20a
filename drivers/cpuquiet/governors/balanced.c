@@ -57,13 +57,13 @@ static struct timer_list load_timer;
 static bool load_timer_active;
 
 /* configurable parameters */
-static unsigned int  balance_level = 75;	//70
+static unsigned int  balance_level = 80;	//70
 static unsigned int  idle_bottom_freq;
 static unsigned int  idle_top_freq;
 static unsigned long up_delay;
 static unsigned long down_delay;
 static unsigned long last_change_time;
-static unsigned int  load_sample_rate = 20; /* msec */
+static unsigned int  load_sample_rate = 24;	//20; /* msec */
 static struct workqueue_struct *balanced_wq;
 static struct delayed_work balanced_work;
 static BALANCED_STATE balanced_state;
@@ -177,19 +177,19 @@ static unsigned int core_bias; //Dummy variable exposed to userspace
 static unsigned int rt_profile_default[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
 //	5,  9, 10, UINT_MAX
-	9, 11, 14, UINT_MAX
+	10, 15, 22, UINT_MAX
 };
 
 static unsigned int rt_profile_1[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
 //	8,  9, 10, UINT_MAX
-	11, 13, 15, UINT_MAX
+	16, 24, 32, UINT_MAX
 };
 
 static unsigned int rt_profile_2[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
 //	5,  13, 14, UINT_MAX
-	13, 17, 21, UINT_MAX
+	24, 32, 42, UINT_MAX
 };
 
 static unsigned int rt_profile_disable[] = {
@@ -511,7 +511,7 @@ static int balanced_start(void)
 	INIT_DELAYED_WORK(&balanced_work, balanced_work_func);
 
 	up_delay = msecs_to_jiffies(200);	//100
-	down_delay = msecs_to_jiffies(600);	//2000
+	down_delay = msecs_to_jiffies(500);	//2000
 
 	table = cpufreq_frequency_get_table(0);
 	if (!table)
@@ -522,7 +522,7 @@ static int balanced_start(void)
 	if (count < 4)
 		return -EINVAL;
 
-	idle_top_freq = table[(count / 2) - 1].frequency;
+	idle_top_freq = table[(count / 2) + 1].frequency;	// / 2) - 1].
 	idle_bottom_freq = table[(count / 2) - 2].frequency;
 
 	cpufreq_register_notifier(&balanced_cpufreq_nb,

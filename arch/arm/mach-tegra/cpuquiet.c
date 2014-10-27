@@ -40,7 +40,7 @@
 #include "clock.h"
 
 #define INITIAL_STATE		TEGRA_CPQ_ENABLED
-#define UP_DELAY_MS		100	//70
+#define UP_DELAY_MS		120	//70
 #define DOWN_DELAY_MS		400	//2000
 #define HOTPLUG_DELAY_MS	100
 
@@ -842,8 +842,8 @@ int __cpuinit tegra_auto_hotplug_init(struct mutex *cpulock)
 	init_timer(&updown_timer);
 	updown_timer.function = updown_handler;
 
-	idle_top_freq = clk_get_max_rate(cpu_lp_clk) / 1000;
-	idle_bottom_freq = clk_get_min_rate(cpu_g_clk) / 1000;
+	idle_top_freq = ((clk_get_max_rate(cpu_lp_clk) / 1000) + 38000);  //475000
+	idle_bottom_freq = ((clk_get_min_rate(cpu_g_clk) / 1000) + 105000);  //370000
 
 	up_delay = msecs_to_jiffies(UP_DELAY_MS);
 	down_delay = msecs_to_jiffies(DOWN_DELAY_MS);

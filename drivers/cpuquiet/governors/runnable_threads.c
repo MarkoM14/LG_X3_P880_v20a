@@ -38,13 +38,13 @@ static struct timer_list runnables_timer;
 
 static RUNNABLES_STATE runnables_state;
 /* configurable parameters */
-static unsigned int sample_rate = 20;		/* msec */
+static unsigned int sample_rate = 25;		//20; /* msec */
 
 #define NR_FSHIFT_EXP	3
 #define NR_FSHIFT	(1 << NR_FSHIFT_EXP)
 /* avg run threads * 8 (e.g., 11 = 1.375 threads) */
 static unsigned int default_thresholds[] = {
-	10, 18, 20, UINT_MAX
+	11, 18, 25, UINT_MAX
 };
 
 static unsigned int nr_run_last;
