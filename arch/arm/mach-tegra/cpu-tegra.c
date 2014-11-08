@@ -731,6 +731,8 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 		register_pm_notifier(&tegra_cpu_pm_notifier);
 	}
 
+	cpufreq_set_max_freq(NULL, LONG_MAX);
+
 	return 0;
 }
 
