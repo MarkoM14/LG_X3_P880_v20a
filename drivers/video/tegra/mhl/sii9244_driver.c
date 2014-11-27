@@ -518,7 +518,7 @@ void simg_init_timer(u8 data, unsigned int msecs)
   simg_timer.expires = jiffies + (MSECS_TO_JIFFIES(msecs) + 1); // 2 * HZ;
   add_timer(&simg_timer);
 }
-EXPORT_SYMBOL(simg_timer);		// kibum.leelge.com
+EXPORT_SYMBOL(simg_timer);		//                 
 
 //                                                     
 //                                                  

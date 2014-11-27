@@ -31,7 +31,7 @@
 #define MISC_PARTITION				"/dev/block/platform/sdhci-tegra.3/by-name/MSC"
 #define MISC_MSG_LENGTH 32
 #define MISC_MSG_BASE_OFFSET 0x1000
-// modify this file and /android/vendor/lge/terga/core/system/fastboot/lge_boot/inc/lge_boot_utils.h
+//                                                                                                  
 typedef enum{
     msg_type_misc = 0,
     msg_type_webdn,
@@ -42,7 +42,7 @@ typedef enum{
     msg_type_bootcause,	
     msg_type_max_count
 }misc_msg_type;
-// modify this file and /android/vendor/lge/terga/core/system/fastboot/lge_boot/inc/lge_boot_utils.h
+//                                                                                                  
 #define MISC_MSG_COUNT msg_type_max_count	// MAX number of MISC messages
 #define MISC_MSG_SIZE MISC_MSG_COUNT * MISC_MSG_LENGTH
 

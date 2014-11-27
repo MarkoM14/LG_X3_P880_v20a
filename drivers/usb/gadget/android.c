@@ -52,7 +52,7 @@
 #include "f_mass_storage.c"
 
 //                                                                                                          
-//#include "u_lgeusb.c"
+//                     
 //#include "f_cdrom_storage.c"
 //#endif
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN

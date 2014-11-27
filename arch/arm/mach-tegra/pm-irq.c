@@ -298,7 +298,7 @@ static int tegra_pm_irq_syscore_suspend(void)
 #endif
 
 	write_pmc_wake_level(wake_level);
-//seongjun.cho@lge.con why ics 2 write_level
+//                                          
 #ifdef CONFIG_MACH_X3 
 	write_pmc_wake_level(wake_level);
 #endif

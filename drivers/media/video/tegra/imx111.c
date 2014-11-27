@@ -1298,7 +1298,7 @@ static int imx111_write_table(struct i2c_client *client,
 	for (next = table; next->addr != IMX111_TABLE_END; next++) {
 		if (next->addr == IMX111_TABLE_WAIT_MS) {
 			//pr_info("imx111: imx111_write_table : IMX111_TABLE_WAIT_MS ");
-			//hyojin.an@lge 2nd camera camp 
+			//                              
 			msleep(next->val);
 			continue;
 		}

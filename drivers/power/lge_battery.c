@@ -1257,7 +1257,7 @@ static ssize_t lge_battery_show(struct device *dev,
 			    struct device_attribute *attr,
 			    char *buf)
 {
-	//struct lge_battery_info *info = dev_get_drvdata(dev->parent);
+	//                                                             
 	int i = 0; //, val;
 	const ptrdiff_t off = attr - lge_battery_attrs;
 
@@ -1275,7 +1275,7 @@ static ssize_t lge_battery_store(struct device *dev,
 {
 	int ret = 0;
 	const ptrdiff_t off = attr - lge_battery_attrs;
-	//struct lge_battery_info *info = dev_get_drvdata(dev->parent);
+	//                                                             
 
 	switch (off) {
 		default:

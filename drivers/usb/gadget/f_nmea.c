@@ -103,7 +103,7 @@ static struct usb_endpoint_descriptor nmea_fs_notify_desc = {
 		.wMaxPacketSize =	cpu_to_le16(0x0a),
 	.bInterval =		1 << 5,
 };
-// yongkyun.lee@ lge.com END 
+//                           
 #endif//
 
 static struct usb_descriptor_header *nmea_fs_function[] __initdata = {
@@ -127,7 +127,7 @@ static struct usb_endpoint_descriptor nmea_hs_notify_desc = {
 	.wMaxPacketSize =	cpu_to_le16(0x0a),
 	.bInterval =		5+4,
 };
-// yongkyun.lee@ lge.com END 
+//                           
 #endif//
 
 static struct usb_endpoint_descriptor nmea_hs_in_desc __initdata = {
@@ -264,7 +264,7 @@ nmea_bind(struct usb_configuration *c, struct usb_function *f)
 		goto fail;
 	nmea->notify = ep;
 	ep->driver_data = cdev;	/* claim */
-// yongkyun.lee@ lge.com END 
+//                           
 #endif//
 	/* copy descriptors, and track endpoint copies */
 	f->descriptors = usb_copy_descriptors(nmea_fs_function);
@@ -278,7 +278,7 @@ nmea_bind(struct usb_configuration *c, struct usb_function *f)
 //                                          
 	nmea->fs.notify = usb_find_endpoint(nmea_fs_function,
 			f->descriptors, &nmea_fs_notify_desc);
-// yongkyun.lee@ lge.com END 
+//                           
 #endif//
 	/* support all relevant hardware speeds... we expect that when
 	 * hardware is dual speed, all bulk-capable endpoints work at
@@ -293,7 +293,7 @@ nmea_bind(struct usb_configuration *c, struct usb_function *f)
 //                                          
 		nmea_hs_notify_desc.bEndpointAddress =
 				nmea_fs_notify_desc.bEndpointAddress;
-// yongkyun.lee@ lge.com END 
+//                           
 #endif//
 		/* copy descriptors, and track endpoint copies */
 		f->hs_descriptors = usb_copy_descriptors(nmea_hs_function);
@@ -306,7 +306,7 @@ nmea_bind(struct usb_configuration *c, struct usb_function *f)
 //                                          
 		nmea->hs.notify= usb_find_endpoint(nmea_hs_function,
 				f->hs_descriptors, &nmea_hs_notify_desc);
-// yongkyun.lee@ lge.com END 
+//                           
 #endif//
 	}
 	printk(KERN_ERR "[MSG]>> f_nmea > nmea_bind   : IN	  EP = %d    !! \n", nmea_hs_in_desc.bEndpointAddress );

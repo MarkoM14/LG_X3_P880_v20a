@@ -315,7 +315,7 @@ power_attr(wake_unlock);
 #endif
 
 //                                                                          
-// /sys/power/lge_logstart
+//                        
 #include <linux/rtc.h>
 
 static ssize_t lge_logstart_show(struct kobject *kobj,

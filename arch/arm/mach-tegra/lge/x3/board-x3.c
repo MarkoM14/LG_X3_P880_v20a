@@ -64,7 +64,7 @@
 #include <mach/thermal.h>
 
 //                                                       
-//#include <lge/gps_gpio.h>
+//                         
 #include <lge/board-x3-gps.h>
 //                                                       
 

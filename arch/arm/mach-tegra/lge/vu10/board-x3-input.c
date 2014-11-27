@@ -564,7 +564,7 @@ static int lge_common_sensor_init(void)
 			 gpio_free(lge_sensor_int_data[n].num);
 			 continue;
 		}
-        //gpio_tlmm_config(lge_sensor_int_data[n].config, GPIO_CFG_ENABLE);
+        //                                                                 
 		rc = gpio_direction_input(lge_sensor_int_data[n].num);
 		if(rc)
 		{

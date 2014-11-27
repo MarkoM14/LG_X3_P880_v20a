@@ -15,10 +15,10 @@
 
 #define LGE_NVDATA_PARTITION			"/dev/block/platform/sdhci-tegra.3/by-name/NVA"
 
-// If you chnanged lge_nvdata_offset,modify the following files.
-// android/kernel/arch/arm/mach-tegra/lge/x3/include/lge/board-x3-nv.h
-// android/bootable/recovery/lge_boot_utils.h
-// android/vendor/lge/tegra/core/system/fastboot/lge_boot/inc/lge_boot_utils.h
+//                                                              
+//                                                                    
+//                                           
+//                                                                            
 
 typedef enum{
     /* Block 0 : 0 */
@@ -105,7 +105,7 @@ typedef enum{
 // err return code
 #define LGE_NVDATA_EMMC_ERR_SIZE_TOO_SMALL	-1;  
 #define LGE_NVDATA_EMMC_ERR_SIZE_TOO_LARGE	-2; 
-// modify this file and /android/vendor/lge/tegra/core/system/fastboot/lge_boot/inc/lge_boot_utils.h
+//                                                                                                  
 
 extern int lge_nvdata_read(lge_nvdata_offset offset, char* buf, int size);
 extern int lge_nvdata_write(lge_nvdata_offset offset, char* buf, int size);

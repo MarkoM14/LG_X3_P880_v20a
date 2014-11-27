@@ -649,19 +649,19 @@ static irqreturn_t max8971_charger_wq(int irq, void *data)
 
 //kkk_test
 /*
-static void lge_charger_monitor_work(struct work_struct *work)
-{
-	struct max8971_chip *chip;
-	u8 val = 0;
-	chip = container_of(work, struct max8971_chip, monitor_work);
-	
-	val = max8971_read_reg(chip->client, MAX8971_REG_DETAILS2);
-	dev_dbg(&chip->client->dev, "MAX8971_REG_DETAILS2(0x%x) = 0x%02x\n", MAX8971_REG_DETAILS2, val);
-	
-	schedule_delayed_work(&chip->monitor_work, 5 * HZ);
+                                                              
+ 
+                           
+            
+                                                              
+ 
+                                                            
+                                                                                                 
+ 
+                                                    
 
-	return;
-}
+        
+ 
 */
 
 static void lge_charger_setting_work(struct work_struct *work)

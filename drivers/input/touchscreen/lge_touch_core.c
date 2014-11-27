@@ -98,8 +98,8 @@ module_param(doubletap_to_wake, bool, 0664);
 #define LGE_TOUCH_ATTR(_name, _mode, _show, _store)	\
 struct lge_touch_attribute lge_touch_attr_##_name = __ATTR(_name, _mode, _show, _store)
 
-/* Debug mask value
- * usage: echo [debug_mask] > /sys/module/lge_touch_core/parameters/debug_mask
+/*                 
+                                                                              
  */
 
 /*u32 touch_debug_mask = 0xFF;
@@ -110,8 +110,8 @@ u32 touch_debug_mask = DEBUG_BASE_INFO;
 module_param_named(debug_mask, touch_debug_mask, int, S_IRUGO|S_IWUSR|S_IWGRP);
 
 #ifdef LGE_TOUCH_TIME_DEBUG
-/* Debug mask value
- * usage: echo [debug_mask] > /sys/module/lge_touch_core/parameters/time_debug_mask
+/*                 
+                                                                                   
  */
 u32 touch_time_debug_mask = DEBUG_NONE;
 module_param_named(time_debug_mask, touch_time_debug_mask, int, S_IRUGO|S_IWUSR|S_IWGRP);
@@ -2695,9 +2695,9 @@ static struct attribute *lge_touch_attribute_list[] = {
 	NULL,
 };
 
-/* lge_touch_attr_show / lge_touch_attr_store
- *
- * sysfs bindings for lge_touch
+/*                                           
+  
+                               
  */
 static ssize_t lge_touch_attr_show(struct kobject *lge_touch_kobj, struct attribute *attr,
 			     char *buf)
