@@ -921,6 +921,20 @@ config CC_OPTIMIZE_FOR_SIZE
 
 	  If unsure, say Y.
 
+config CC_LTO
+	bool "Enable gcc link time optimizations"
+	depends on !FUNCTION_TRACER && !GCOV_KERNEL
+	help
+	  With this option gcc will do whole program optimizations for
+	  the whole kernel and module. This increases compile time, but can
+	  lead to better code. It allows gcc to inline functions between
+	  different files. It might also trigger bugs due to more
+	  aggressive optimization. It allows gcc to drop unused code.
+	  With this option gcc will also do some global checking over
+	  different source files.
+
+	  This requires a gcc 4.7 or later compiler and
+
 config SYSCTL
 	bool
 
