@@ -121,6 +121,10 @@ config BACKLIGHT_LM353X
     help
       If you have a national lm353X say Y to enable the
       backlight driver
+      
+config DISABLE_FB1_AND_HDMI
+    bool "Disable HDMI"
+    default n
 
 endmenu
 

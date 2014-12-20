@@ -55,9 +55,11 @@ extern int ssd2825_bridge_disable(void);
 
 bool x3_hddisplay_on = false;
 static struct workqueue_struct *bridge_work_queue;
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static struct regulator *x3_hdmi_reg = NULL;
 static struct regulator *x3_hdmi_pll = NULL;
 static struct regulator *x3_hdmi_vddio = NULL;
+#endif
 
 static atomic_t sd_brightness = ATOMIC_INIT(255);
 
@@ -213,7 +215,7 @@ static int x3_panel_postsuspend(void)
 	return 0;
 }
 
-
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static int x3_hdmi_vddio_enable(struct device *dev)
 {
 	int ret;
@@ -278,6 +280,7 @@ static int x3_hdmi_disable(void)
 
 	return 0;
 }
+#endif
 
 static struct resource x3_disp1_resources[] = {
 	{
@@ -306,6 +309,7 @@ static struct resource x3_disp1_resources[] = {
 	},
 };
 
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static struct resource x3_disp2_resources[] = {
 	{
 		.name	= "irq",
@@ -332,6 +336,7 @@ static struct resource x3_disp2_resources[] = {
 		.flags	= IORESOURCE_MEM,
 	},
 };
+#endif
 
 static struct tegra_dc_mode x3_panel_modes[] = {
 #if defined(CONFIG_MACH_HD7_HITACHI)
@@ -485,6 +490,7 @@ static struct tegra_fb_data x3_fb_data = {
     .flags		= TEGRA_FB_FLIP_ON_PROBE,
 };
 
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static struct tegra_fb_data x3_hdmi_fb_data = {
 	.win		= 0,
 	.xres		= 1920,
@@ -518,6 +524,7 @@ static struct tegra_dc_platform_data x3_disp2_pdata = {
 	.fb		= &x3_hdmi_fb_data,
 	.emc_clk_rate	= 300000000,
 };
+#endif
 
 static void ssd2825_bridge_enable_worker(struct work_struct *work)
 {
@@ -575,6 +582,7 @@ static struct nvhost_device x3_disp1_device = {
 	},
 };
 
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static struct nvhost_device x3_disp2_device = {
 	.name		= "tegradc",
 	.id		= 1,
@@ -584,6 +592,7 @@ static struct nvhost_device x3_disp2_device = {
 		.platform_data = &x3_disp2_pdata,
 	},
 };
+#endif
 
 static struct nvmap_platform_carveout x3_carveouts[] = {
 	[0] = NVMAP_HEAP_CARVEOUT_IRAM_INIT,
@@ -742,11 +751,12 @@ int __init x3_panel_init(void)
 
 	x3_carveouts[1].base = tegra_carveout_start;
 	x3_carveouts[1].size = tegra_carveout_size;
-
+	
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 	tegra_gpio_enable(x3_hdmi_hpd);
 	gpio_request(x3_hdmi_hpd, "hdmi_hpd");
 	gpio_direction_input(x3_hdmi_hpd);
-
+#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	x3_panel_early_suspender.suspend = x3_panel_early_suspend;
@@ -783,7 +793,8 @@ int __init x3_panel_init(void)
 #if defined(CONFIG_TEGRA_GRHOST) && defined(CONFIG_TEGRA_DC)
 	if (!err)
 		err = nvhost_device_register(&x3_disp1_device);
-
+	
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 	res = nvhost_get_resource_byname(&x3_disp2_device,
 					 IORESOURCE_MEM, "fbmem");
 	res->start = tegra_fb2_start;
@@ -791,6 +802,7 @@ int __init x3_panel_init(void)
 
 	if (!err)
 		err = nvhost_device_register(&x3_disp2_device);
+#endif
 #endif
 
 #if defined(CONFIG_TEGRA_GRHOST) && defined(CONFIG_TEGRA_NVAVP)

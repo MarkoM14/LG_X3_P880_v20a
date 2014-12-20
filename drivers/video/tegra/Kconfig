@@ -195,6 +195,7 @@ config NVMAP_CONVERT_CARVEOUT_TO_IOVMM
 
 config TEGRA_NVHDCP
 	bool "Support NVHDCP content protection on HDMI"
+	depends on !DISABLE_FB1_AND_HDMI
 	default n
 	help
 	  Say Y here to support NVHDCP upstream and downstream protocols, this

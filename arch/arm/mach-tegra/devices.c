@@ -1716,6 +1716,7 @@ struct nvhost_device tegra_disp1_device = {
 	.num_resources	= ARRAY_SIZE(tegra_disp1_resources),
 };
 
+#if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static struct resource tegra_disp2_resources[] = {
 	{
 		.name	= "irq",
@@ -1752,6 +1753,7 @@ struct nvhost_device tegra_disp2_device = {
 		.platform_data = 0,
 	},
 };
+#endif
 
 struct platform_device tegra_nvmap_device = {
 	.name	= "tegra-nvmap",
