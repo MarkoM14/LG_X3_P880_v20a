@@ -2466,10 +2466,7 @@ static void ts_ldisc_close(struct tty_struct *tty)
 	printk(KERN_ERR "\n* Restart USB-HSIC Modem               *\n");
 	printk(KERN_ERR "******************************* \n");
 	printk(KERN_ERR"### CP Crash : %d, USB DISCONNECT : %d ###\n",is_cp_crash, is_usb_disconnect);
-	
-	if (is_cp_crash == 1)
-		is_usb_disconnect = 0;
-	
+
 	if (tty->disc_data) {
 		TS0710_DEBUG("tty->disc_data = 0x%p\n", tty->disc_data);
 		kfree(tty->disc_data);
@@ -2502,9 +2499,11 @@ static void ts_ldisc_close(struct tty_struct *tty)
 			TS0710_PRINTK("Giving up waiting for modem");
 	}
 
-	ts_ldisc_close_is_called = 0;
-	if (is_cp_crash == 1)
+	if ((is_cp_crash == 1) || (is_usb_disconnect == 1)) {
 		is_cp_crash = 0;
+		is_usb_disconnect = 0;
+	}
+	ts_ldisc_close_is_called = 0;
 
 	ril_recovery_cnt++;
 	TS0710_PRINTK("### ril_recovery_cnt = %lu ###\n", ril_recovery_cnt);
