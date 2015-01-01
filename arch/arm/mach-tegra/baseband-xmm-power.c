@@ -264,8 +264,8 @@ static int xmm_power_off(struct platform_device *device)
 	return 0;
 }
 
-extern int is_usb_disconnect;                                                            
-extern int is_cp_crash;
+//extern int is_usb_disconnect;                                                            
+//extern int is_cp_crash;
 
 static ssize_t baseband_xmm_onoff(struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t count)
@@ -301,12 +301,12 @@ static ssize_t baseband_xmm_onoff(struct device *dev, struct device_attribute *a
 		return -EINVAL;
 	}
 //test don't allow lge_ril.so to turn off xmm
-	if ((pwr == 0) && !is_usb_disconnect && !is_cp_crash) {
-		pr_err("%s: Test, don't allow lge_ril.so to turn off xmm(%d)\n",
-						    __func__, power_onoff);
-		mutex_unlock(&xmm_onoff_mutex);
-		return -EINVAL;
-	}
+//	if ((pwr == 0) && !is_usb_disconnect && !is_cp_crash) {
+//		pr_err("%s: Test, don't allow lge_ril.so to turn off xmm(%d)\n",
+//						    __func__, power_onoff);
+//		mutex_unlock(&xmm_onoff_mutex);
+//		return -EINVAL;
+//	}
 //test end
 	power_onoff = pwr;
 	pr_debug("%s power_onoff=%d\n", __func__, power_onoff);
