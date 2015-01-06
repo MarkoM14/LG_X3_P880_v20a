@@ -823,11 +823,12 @@ static void tegra_cpufreq_early_suspend(struct early_suspend *h)
 
 	cpufreq_set_max_freq(NULL, capped_screenoff);
 }
+/*Moved to earlysuspend.c to gain 300msec
 static void tegra_cpufreq_late_resume(struct early_suspend *h)
 {
         pr_info("tegra_cpufreq_late_resume: restore freq\n");
 	cpufreq_set_max_freq(NULL, LONG_MAX);
-}
+}*/
 
 #endif
 
@@ -861,7 +862,7 @@ static int __init tegra_cpufreq_init(void)
 		return ret;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	tegra_cpufreq_early_suspender.suspend = tegra_cpufreq_early_suspend;
-	tegra_cpufreq_early_suspender.resume = tegra_cpufreq_late_resume;
+//	tegra_cpufreq_early_suspender.resume = tegra_cpufreq_late_resume;
 	tegra_cpufreq_early_suspender.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 //TO TEST, faster resume	tegra_cpufreq_early_suspender.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
 	register_early_suspend(&tegra_cpufreq_early_suspender);
