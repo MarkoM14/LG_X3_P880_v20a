@@ -108,7 +108,7 @@ this mux driver is not able to acquire the sema but wont schedule as its not set
 #define ENABLE_MUX_WAKE_LOCK
 #ifdef ENABLE_MUX_WAKE_LOCK
 #include <linux/wakelock.h>
-#define MUX_WAKELOCK_TIME	(20*HZ)
+#define MUX_WAKELOCK_TIME	(40*HZ)
 struct wake_lock	 	s_wake_lock;
 #endif //ENABLE_MUX_WAKE_LOCK
 
