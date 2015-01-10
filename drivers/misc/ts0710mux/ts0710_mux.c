@@ -2302,7 +2302,7 @@ static int ts_ldisc_tx_looper(void *param)
     					if(res == -1) // spi suspend MAX time 1second
     						retry_max = 10;
     					else // spi SRDY wait error : 500ms + (200 ms+500ms) * 2
-    						retry_max = 2;
+    						retry_max = 4;
 						
     				//	TS0710_PRINTK("1st error send to dlci=%d,res : %d,count : %d, data : %s",i,res,data_size,data_ptr);
     					retry_cnt= 0;
@@ -2474,21 +2474,12 @@ static void ts_ldisc_close(struct tty_struct *tty)
 	}
 
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
-	//TODO is there a better way to wake ril?
-	//Only send power_key when screen is off
-	if (!x3_hddisplay_on) {
-		input_report_key(recovery_dev, KEY_POWER, 1);
-		input_report_key(recovery_dev, KEY_POWER, 0);
-		input_sync(recovery_dev);
-		TS0710_PRINTK("Input power_key sendt to wake RIL");
-	}
-
 	//reset baseband_xmm
 	baseband_xmm_power_switch(0);
 	mdelay(600); //TODO wait longer or until lge-ril-recovery starts ??
 	baseband_xmm_power_switch(1);
 
-	// wait for enum_sucess for 8sec before setting ts_ldisc_close_is_called
+	// wait for enum_sucess for 0,5x16sec before setting ts_ldisc_close_is_called to 0
 	if (!enum_success) {
 		do {
 			TS0710_DEBUG("wait for modem emulation");
@@ -2497,6 +2488,16 @@ static void ts_ldisc_close(struct tty_struct *tty)
 		} while ((!enum_success) && (retry));
 		if (!retry)
 			TS0710_PRINTK("Giving up waiting for modem");
+	}
+
+	//TODO is there a better way to wake ril?
+	//Only send power_key when screen is off
+	if (!x3_hddisplay_on) {
+		mdelay(500);
+		input_report_key(recovery_dev, KEY_POWER, 1);
+		input_report_key(recovery_dev, KEY_POWER, 0);
+		input_sync(recovery_dev);
+		TS0710_PRINTK("Input power_key sendt to wake RIL");
 	}
 
 	if ((is_cp_crash == 1) || (is_usb_disconnect == 1)) {
