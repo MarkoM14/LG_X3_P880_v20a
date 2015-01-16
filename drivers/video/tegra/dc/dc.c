@@ -913,10 +913,11 @@ static void tegra_dc_set_out(struct tegra_dc *dc, struct tegra_dc_out *out)
 		dc->out_ops = &tegra_dc_rgb_ops;
 		break;
 
+#ifndef CONFIG_DISABLE_FB1_AND_HDMI
 	case TEGRA_DC_OUT_HDMI:
 		dc->out_ops = &tegra_dc_hdmi_ops;
 		break;
-
+#endif
 	case TEGRA_DC_OUT_DSI:
 		dc->out_ops = &tegra_dc_dsi_ops;
 		break;
@@ -1685,6 +1686,7 @@ static int _tegra_dc_set_default_videomode(struct tegra_dc *dc)
 {
 	if (dc->mode.pclk == 0) {
 		switch (dc->out->type) {
+#ifndef CONFIG_DISABLE_FB1_AND_HDMI
 		case TEGRA_DC_OUT_HDMI:
 		/* DC enable called but no videomode is loaded.
 		     Check if HDMI is connected, then set fallback mdoe */
@@ -1695,6 +1697,7 @@ static int _tegra_dc_set_default_videomode(struct tegra_dc *dc)
 			return false;
 
 		break;
+#endif
 
 		/* Do nothing for other outputs for now */
 		case TEGRA_DC_OUT_RGB:

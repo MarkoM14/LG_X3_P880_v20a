@@ -64,6 +64,7 @@ get_output_properties(struct tegra_dc_ext_control_output_properties *properties)
 
 static int get_output_edid(struct tegra_dc_ext_control_output_edid *edid)
 {
+#ifndef CONFIG_DISABLE_FB1_AND_HDMI
 	struct tegra_dc *dc;
 	size_t user_size = edid->size;
 	struct tegra_dc_edid *dc_edid = NULL;
@@ -101,6 +102,9 @@ done:
 		tegra_dc_put_edid(dc_edid);
 
 	return ret;
+#else
+	return ERR_PTR(-ENODEV);
+#endif
 }
 
 static int set_event_mask(struct tegra_dc_ext_control_user *user, u32 mask)

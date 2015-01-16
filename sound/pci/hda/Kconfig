@@ -162,6 +162,7 @@ config SND_HDA_CODEC_VIA
 config SND_HDA_CODEC_HDMI
 	bool "Build HDMI/DisplayPort HD-audio codec support"
 	select SND_DYNAMIC_MINORS
+	depends on !DISABLE_FB1_AND_HDMI
 	default y
 	help
 	  Say Y here to include HDMI and DisplayPort HD-audio codec

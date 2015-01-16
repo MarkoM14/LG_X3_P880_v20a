@@ -1321,12 +1321,11 @@ static int mhl_release(struct inode *ip, struct file *fp)
 	return 0;
 }
 
-
+#if 0
 static int mhl_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
 	SII_DEV_DBG("\n");
 
-#if 0
 	byte data;
 
 	switch(cmd)
@@ -1341,9 +1340,9 @@ static int mhl_ioctl(struct inode *inode, struct file *file, unsigned int cmd, u
 		default:
 		break;
 	}
-#endif		
 	return 0;
 }
+#endif
 
 static struct file_operations mhl_fops = {
 	.owner  = THIS_MODULE,
