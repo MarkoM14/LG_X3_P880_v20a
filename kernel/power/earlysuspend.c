@@ -239,8 +239,6 @@ void request_suspend_state(suspend_state_t new_state)
 
 		state &= ~SUSPEND_REQUESTED;
 		wake_lock(&main_wake_lock);
-		pr_info("tegra_cpufreq_late_resume: restore max freq\n");
-		cpufreq_set_max_freq(NULL, LONG_MAX);
 		queue_work(suspend_work_queue, &late_resume_work);
 	}
 //                           
