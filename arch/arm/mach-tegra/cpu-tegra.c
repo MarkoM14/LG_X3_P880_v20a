@@ -65,8 +65,9 @@ static struct pm_qos_request_list cpufreq_max_req;
 static struct pm_qos_request_list cpufreq_min_req;
 
 static bool force_policy_max;
+static bool device_booted = false;
 
-#define RESTRICTED_CLOCK	620000
+#define RESTRICTED_CLOCK	475000
 unsigned int capped_screenoff = RESTRICTED_CLOCK;
 
 static int force_policy_max_set(const char *arg, const struct kernel_param *kp)
@@ -746,7 +747,7 @@ static int tegra_cpu_init(struct cpufreq_policy *policy)
 		register_pm_notifier(&tegra_cpu_pm_notifier);
 	}
 
-	cpufreq_set_max_freq(NULL, LONG_MAX);
+	cpufreq_set_max_freq(NULL, cpu_user_cap);
 
 	return 0;
 }
@@ -833,15 +834,17 @@ static struct early_suspend tegra_cpufreq_early_suspender;
 
 static void tegra_cpufreq_early_suspend(struct early_suspend *h)
 {
-        pr_info("tegra_cpufreq_early_suspend: set screen off max to %u\n",
-                capped_screenoff);
-
-	cpufreq_set_max_freq(NULL, capped_screenoff);
+        if (device_booted) {
+		pr_info("tegra_cpufreq_early_suspend: set screen off max to %u\n",
+			capped_screenoff);
+		cpufreq_set_max_freq(NULL, capped_screenoff);
+	}
 }
 static void tegra_cpufreq_late_resume(struct early_suspend *h)
 {
         pr_info("tegra_cpufreq_late_resume: restore freq\n");
-	cpufreq_set_max_freq(NULL, LONG_MAX);
+	cpufreq_set_max_freq(NULL, cpu_user_cap);
+	device_booted = true;
 }
 
 #endif
