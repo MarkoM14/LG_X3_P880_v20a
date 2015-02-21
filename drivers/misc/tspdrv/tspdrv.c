@@ -472,9 +472,9 @@ static int ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsig
 #ifdef QA_TEST
             if (g_nForceLogIndex)
             {
-                for (i=0; i<g_nForceLogIndex; i++)
-                {
-                    printk("<6>%d\t%d\n", g_nTime, g_nForceLog[i]);
+                for (i = 0; i < g_nForceLogIndex; i++) {
+				printk(KERN_INFO "%d\t%d\n", g_nTime,
+						g_nForceLog[i]);
                     g_nTime += TIME_INCREMENT;
                 }
             }
@@ -490,7 +490,7 @@ static int ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsig
         case TSPDRV_ENABLE_AMP:
             ImmVibeSPI_ForceOut_AmpEnable(arg);
             DbgRecorderReset((arg));
-            DbgRecord((arg,";------- TSPDRV_ENABLE_AMP ---------\n"));
+            DbgRecord((arg,";TSPDRV_ENABLE_AMP\n"));
             break;
 
         case TSPDRV_DISABLE_AMP:

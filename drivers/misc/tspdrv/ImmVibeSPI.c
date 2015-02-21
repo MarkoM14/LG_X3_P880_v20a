@@ -34,15 +34,18 @@
 #include <linux/fcntl.h>
 #include <asm/uaccess.h>
 
-#ifdef IMMVIBESPIAPI
-#undef IMMVIBESPIAPI
+//#define DEBUG
+#ifdef DEBUG
+#define DEBUG_MSG(stuff...)	pr_info(stuff)
+#else
+#define DEBUG_MSG(stuff...)	do {} while (0)
 #endif
-#define IMMVIBESPIAPI static
 
 /*
 ** This SPI supports only one actuator.
 */
 #define NUM_ACTUATORS 1
+
 #define ISA1200_I2C_ADDRESS 0x49 /*0x92 when SADD is high*/
 #define SCTRL         (0)     /* 0x0F, System(LDO) Register Group 0*/
 #define HCTRL0     (0x30)     /* 0x09 */ /* Haptic Motor Driver Control Register Group 0*/
@@ -91,8 +94,6 @@ static int status = 0;
 #define SYS_API_VDDP_OFF // todo - define to something
 #define SLEEP(_ms_time) msleep(_ms_time)// todo - define to something
 
-#define DEBUG_MSG //printk	// todo - define to something
-
 #define PWM_PERIOD_DEFAULT              44000 //20.3KHz
 #define PWM_DUTY_DEFAULT              (PWM_PERIOD_DEFAULT *.75 ) //75%
 
@@ -106,7 +107,7 @@ VibeUInt32 g_nPWM_Freq = PWM_PERIOD_DEFAULT;
 VibeUInt32 g_nLDO_Voltage = LDO_VOLTAGE_DEFAULT;
 
 
-IMMVIBESPIAPI VibeStatus SYS_API__I2C__Write( _addr, _data)
+static VibeStatus SYS_API__I2C__Write(_addr, _data)
 {
 	return tspdrv_i2c_write_byte_data(_addr, _data);
 }
@@ -114,7 +115,7 @@ IMMVIBESPIAPI VibeStatus SYS_API__I2C__Write( _addr, _data)
 /*
 ** Called to disable amp (disable output force)
 */
-/*IMMVIBESPIAPI*/ VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
+VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex)
 {
     int cnt = 0;
     unsigned char I2C_data[1];
@@ -122,7 +123,7 @@ IMMVIBESPIAPI VibeStatus SYS_API__I2C__Write( _addr, _data)
 
     if (g_bAmpEnabled)
     {
-        DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_AmpDisable.\n"));
+        DEBUG_MSG("ImmVibeSPI_ForceOut_AmpDisable.\n");
 
         g_bAmpEnabled = false;
 
@@ -152,7 +153,7 @@ EXPORT_SYMBOL(ImmVibeSPI_ForceOut_AmpDisable);
 /*
 ** Called to enable amp (enable output force0)
 */
-/*IMMVIBESPIAPI*/ VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
+VibeStatus ImmVibeSPI_ForceOut_AmpEnable(VibeUInt8 nActuatorIndex)
 {
     int cnt = 0;	
     unsigned char I2C_data[1];
@@ -167,7 +168,7 @@ EXPORT_SYMBOL(ImmVibeSPI_ForceOut_AmpDisable);
 
     if (!g_bAmpEnabled)
     {
-        DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_AmpEnable.\n"));
+        DEBUG_MSG("ImmVibeSPI_ForceOut_AmpEnable.\n");
         g_bAmpEnabled = true;
 		
 
@@ -283,13 +284,13 @@ EXPORT_SYMBOL(ImmVibeSPI_ForceOut_AmpEnable);
 /*
 ** Called at initialization time to set PWM frequencies, disable amp, etc...
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
+static VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 {
     int cnt = 0;	
     unsigned char I2C_data[1];
     int ret = VIBE_S_SUCCESS;
 
-    DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_Initialize.\n"));
+    DEBUG_MSG("ImmVibeSPI_ForceOut_Initialize.\n");
 
     SYS_API_VDDP_ON;
     SYS_API_LEN_HIGH;
@@ -367,9 +368,9 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Initialize(void)
 /*
 ** Called at termination time to set PWM freq, disable amp, etc...
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
+static VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 {
-    DbgOut((KERN_DEBUG "ImmVibeSPI_ForceOut_Terminate.\n"));
+    DEBUG_MSG( "ImmVibeSPI_ForceOut_Terminate.\n");
     SYS_API_LEN_LOW;
 #ifdef ISA1200_HEN_ENABLE        
     SYS_API_HEN_LOW;
@@ -381,11 +382,10 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_Terminate(void)
 /*
 ** Called by the real-time loop to set PWM_MAG duty cycle
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
+static VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex, VibeUInt16 nOutputSignalBitDepth, VibeUInt16 nBufferSizeInBytes, VibeInt8* pForceOutputBuffer)
 {
     VibeInt8 nForce;
-    int ret = VIBE_S_SUCCESS;
-	int duty_ns;
+    int duty_ns;
 
     switch (nOutputSignalBitDepth)
     {
@@ -393,7 +393,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
             /* pForceOutputBuffer is expected to contain 1 byte */
             if (nBufferSizeInBytes != 1)
 			{
-				DbgOut((KERN_ERR "[ImmVibeSPI] ImmVibeSPI_ForceOut_SetSamples nBufferSizeInBytes =  %d \n", nBufferSizeInBytes ));
+				DEBUG_MSG("[ImmVibeSPI] ImmVibeSPI_ForceOut_SetSamples nBufferSizeInBytes =  %d \n", nBufferSizeInBytes );
 				return VIBE_E_FAIL;
             }
             nForce = pForceOutputBuffer[0];
@@ -418,15 +418,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
     {
         duty_ns = ((nForce + 128) * g_nPWM_Freq) >> 8;
     }
-//	printk("****** nForce : %d , duty_ns : %d ****\n", nForce, duty_ns);
 	tspdrv_control_pwm(1, duty_ns, g_nPWM_Freq);
-    return VIBE_S_SUCCESS;
-}
-/*
-** Called to set force output frequency parameters
-*/
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorIndex, VibeUInt16 nFrequencyParameterID, VibeUInt32 nFrequencyParameterValue)
-{
     return VIBE_S_SUCCESS;
 }
 
@@ -434,7 +426,7 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetFrequency(VibeUInt8 nActuatorInd
 #define DEFAULT_TIMED_STRENGTH 65
 VibeInt8 timedForce = DEFAULT_TIMED_STRENGTH;
 
-VibeStatus ImmVibeSPI_SetTimedSample() {
+VibeStatus ImmVibeSPI_SetTimedSample(void) {
     return ImmVibeSPI_ForceOut_SetSamples(0, 8, 1, &timedForce);
 }
 
@@ -442,7 +434,7 @@ VibeStatus ImmVibeSPI_SetTimedSample() {
 /*
 ** Called to get the device name (device name must be returned as ANSI char)
 */
-IMMVIBESPIAPI VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, char *szDevName, int nSize)
+static VibeStatus ImmVibeSPI_Device_GetName(VibeUInt8 nActuatorIndex, char *szDevName, int nSize)
 {
     return VIBE_S_SUCCESS;
 }	
