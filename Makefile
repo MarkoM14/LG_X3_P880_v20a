@@ -557,16 +557,25 @@ endif # $(dot-config)
 # Defaults to vmlinux, but the arch makefile usually adds further targets
 all: vmlinux
 
+ifndef CONFIG_CC_OPTIMIZE_MORE
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
 KBUILD_CFLAGS	+= -O2
 endif
+endif
+
+ifdef CONFIG_CC_OPTIMIZE_MORE
+KBUILD_CFLAGS	+= -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vectorize
+endif
 
 #Optimization flags for LGE X3
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
-KBUILD_CFLAGS += -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon
+KBUILD_CFLAGS += -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon \
+		 -ffast-math -fsingle-precision-constant \
+		 -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
+
 #Perform Link Time Optimization (LTO)
 ifdef CC_LTO
 KBUILD_CFLAGS += -flto -fno-toplevel-reorder
