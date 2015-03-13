@@ -21,6 +21,7 @@
 #include <linux/syscalls.h>
 #include <linux/fcntl.h>
 #include <linux/limits.h>
+#include <linux/module.h>
 
 #define ERS_DRIVER_NAME "lge-ers-kernel"
 
