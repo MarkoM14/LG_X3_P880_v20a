@@ -25,6 +25,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/export.h>
 
 #include <mach/iomap.h>
 #include <mach/irqs.h>

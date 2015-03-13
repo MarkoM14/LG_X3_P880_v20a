@@ -6,6 +6,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/input.h>
+#include <linux/export.h>
 
 #include <mach/clk.h>
 #include <mach/iomap.h>

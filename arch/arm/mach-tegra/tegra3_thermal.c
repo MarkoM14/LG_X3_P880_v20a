@@ -29,6 +29,7 @@
 #include <mach/edp.h>
 #include <linux/slab.h>
 #include <linux/suspend.h>
+#include <linux/export.h>
 
 #include "clock.h"
 #include "cpu-tegra.h"
