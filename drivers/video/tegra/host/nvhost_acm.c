@@ -21,6 +21,7 @@
 #include "nvhost_acm.h"
 #include "dev.h"
 #include <linux/slab.h>
+#include <linux/stat.h>
 #include <linux/string.h>
 #include <linux/sched.h>
 #include <linux/err.h>

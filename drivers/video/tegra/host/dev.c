@@ -22,6 +22,7 @@
 #include <trace/events/nvhost.h>
 
 #include <linux/nvhost.h>
+#include <linux/module.h>
 #include <mach/gpufuse.h>
 
 MODULE_AUTHOR("NVIDIA");

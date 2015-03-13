@@ -24,6 +24,7 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
+#include <linux/module.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/nvhost.h>

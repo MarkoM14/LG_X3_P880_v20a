@@ -27,6 +27,7 @@
 #include <linux/file.h>
 #include <linux/clk.h>
 #include <linux/hrtimer.h>
+#include <linux/export.h>
 
 #include <trace/events/nvhost.h>
 

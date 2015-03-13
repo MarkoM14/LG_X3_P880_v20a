@@ -27,6 +27,7 @@
 #include <linux/kernel.h>
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
+#include <linux/module.h>
 #include <linux/oom.h>
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>

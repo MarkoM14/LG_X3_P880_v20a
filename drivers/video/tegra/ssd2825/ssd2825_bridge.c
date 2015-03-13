@@ -11,6 +11,7 @@
 #include <linux/earlysuspend.h>
 #include <linux/nvhost.h>
 #include <linux/nvmap.h>
+#include <linux/module.h>
 #include <mach/irqs.h>
 #include <mach/iomap.h>
 #include <mach/dc.h>

@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/file.h>
 #include <linux/clk.h>
+#include <linux/export.h>
 
 #include "dev.h"
 #include "bus.h"
