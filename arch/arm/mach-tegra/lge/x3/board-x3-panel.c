@@ -37,6 +37,7 @@
 #include <linux/spi/spi.h>
 #include <mach/hardware.h>
 #include <linux/pwm_backlight.h>
+#include <linux/cpufreq.h>
 
 #include <mach-tegra/board.h>
 #include <lge/board-x3.h>
@@ -177,6 +178,8 @@ static int x3_panel_enable(struct device *dev)
 			 * this is needed to be called in
 			 * late resume right after early suspend
 			 */
+			printk("x3_hddisplay_on: Set max freq to boost display on\n");
+			cpufreq_set_max_freq(NULL, LONG_MAX);
 			ssd2825_bridge_enable();
 			x3_hddisplay_on = true;
 			return 0;
