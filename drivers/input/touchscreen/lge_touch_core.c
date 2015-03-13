@@ -30,7 +30,8 @@
 #include <linux/time.h>
 #include <linux/version.h>
 #include <linux/kernel.h>
-#include <linux/input.h>
+#include <linux/module.h>
+#include <linux/stat.h>
 
 #include <linux/cpufreq.h>
 //#include <linux/pm_qos.h>

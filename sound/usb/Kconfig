@@ -2,7 +2,7 @@
 
 menuconfig SND_USB
 	bool "USB sound devices"
-	depends on USB
+	depends on USB && !DISABLE_FB1_AND_HDMI
 	default y
 	help
 	  Support for sound devices connected via the USB bus.
