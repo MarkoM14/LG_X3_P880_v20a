@@ -1278,8 +1278,6 @@ enum nl80211_commands {
  * @NL80211_ATTR_VHT_CAPABILITY: VHT Capability information element (from
  *	association request when used with NL80211_CMD_NEW_STATION)
  *
- * @NL80211_ATTR_SCAN_FLAGS: scan request control flags (u32)
- *
  * @NL80211_ATTR_P2P_CTWINDOW: P2P GO Client Traffic Window (u8), used with
  *	the START_AP and SET_BSS commands
  * @NL80211_ATTR_P2P_OPPPS: P2P GO opportunistic PS (u8), used with the
@@ -1592,8 +1590,6 @@ enum nl80211_attrs {
 	NL80211_ATTR_SAE_DATA,
 
 	NL80211_ATTR_VHT_CAPABILITY,
-
-	NL80211_ATTR_SCAN_FLAGS,
 
 	NL80211_ATTR_CHANNEL_WIDTH,
 	NL80211_ATTR_CENTER_FREQ1,
