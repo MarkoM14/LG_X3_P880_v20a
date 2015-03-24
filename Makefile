@@ -245,8 +245,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer
+HOSTCXXFLAGS = -O2 -fno-tree-vectorize
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -346,11 +346,18 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   =
-AFLAGS_MODULE   =
+#Optimization flags for LGE X3
+ifdef CONFIG_MACH_X3
+#cortex-a9 flags
+OPTIMIZATION_FLAGS += -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon \
+			-ffast-math -fsingle-precision-constant \
+			-fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
+endif
+CFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
+AFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	=
-AFLAGS_KERNEL	=
+CFLAGS_KERNEL	= $(OPTIMIZATION_FLAGS)
+AFLAGS_KERNEL	= $(OPTIMIZATION_FLAGS)
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 
 
@@ -558,15 +565,14 @@ endif # $(dot-config)
 all: vmlinux
 
 ifndef CONFIG_CC_OPTIMIZE_MORE
-ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os
+  ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
+  KBUILD_CFLAGS	+= -Os
+  else
+  KBUILD_CFLAGS	+= -O2
+  endif
 else
-KBUILD_CFLAGS	+= -O2
-endif
-endif
-
-ifdef CONFIG_CC_OPTIMIZE_MORE
-KBUILD_CFLAGS	+= -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-tree-vectorize
+KBUILD_CFLAGS	+= -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves \
+			-fno-inline-functions -fno-tree-vectorize
 endif
 
 #Optimization flags for LGE X3
@@ -575,12 +581,12 @@ ifdef CONFIG_MACH_X3
 KBUILD_CFLAGS += -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon \
 		 -ffast-math -fsingle-precision-constant \
 		 -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
+endif
 
 #Perform Link Time Optimization (LTO)
 ifdef CC_LTO
 KBUILD_CFLAGS += -flto -fno-toplevel-reorder
 LDFLAGS += -flto -fno-toplevel-reorder
-endif
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile

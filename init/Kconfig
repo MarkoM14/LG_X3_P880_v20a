@@ -936,6 +936,7 @@ endif
 
 config CC_OPTIMIZE_FOR_SIZE
 	bool "Optimize for size"
+	default y
 	help
 	  Enabling this option will pass "-Os" instead of "-O2" to gcc
 	  resulting in a smaller kernel.
@@ -944,7 +945,6 @@ config CC_OPTIMIZE_FOR_SIZE
 
 config CC_OPTIMIZE_MORE
 	bool "Use -O3 optimization"
-	depends on !CC_OPTIMIZE_FOR_SIZE
 	default n
 	help
 	  Enabling this option will pass "-O3" instead of "-O2/-Os" to gcc
