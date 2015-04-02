@@ -825,17 +825,17 @@ static int max98088_dai1_voice_filter_get(struct snd_kcontrol *kcontrol,
 
 static const unsigned int max98088_micboost_tlv[] = {
        TLV_DB_RANGE_HEAD(2),
-       0, 1, TLV_DB_SCALE_ITEM(0, 2000, 0),
+       0, 1, TLV_DB_SCALE_ITEM(0, 2000, 0), //min, step, mute
        2, 2, TLV_DB_SCALE_ITEM(3000, 0, 0),
 };
 
-static const unsigned int max98088_hp_tlv[] = {
+static const unsigned int max98088_hp_tlv[] = { //Headphone Volume
 	TLV_DB_RANGE_HEAD(5),
-	0, 6, TLV_DB_SCALE_ITEM(-6700, 400, 0),
-	7, 14, TLV_DB_SCALE_ITEM(-4000, 300, 0),
-	15, 21, TLV_DB_SCALE_ITEM(-1700, 200, 0),
-	22, 27, TLV_DB_SCALE_ITEM(-400, 100, 0),
-	28, 31, TLV_DB_SCALE_ITEM(150, 50, 0),
+	0, 6, TLV_DB_SCALE_ITEM(-6200, 400, 0),
+	7, 14, TLV_DB_SCALE_ITEM(-3500, 300, 0),
+	15, 21, TLV_DB_SCALE_ITEM(-1200, 200, 0),
+	22, 27, TLV_DB_SCALE_ITEM(100, 100, 0),
+	28, 31, TLV_DB_SCALE_ITEM(300, 50, 0),
 };
 
 static const unsigned int max98088_spk_tlv[] = {
