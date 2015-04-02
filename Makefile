@@ -332,7 +332,11 @@ AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld
 CC		= $(CROSS_COMPILE)gcc
 CPP		= $(CC) -E
+ifdef CONFIG_CC_LTO
+AR		= $(CROSS_COMPILE)gcc-ar
+else
 AR		= $(CROSS_COMPILE)ar
+endif
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
@@ -350,8 +354,8 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
 OPTIMIZATION_FLAGS += -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon \
-			-ffast-math -fsingle-precision-constant \
-			-fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
+			-ffast-math -fsingle-precision-constant -fgcse-lm -fgcse-sm \
+			-mvectorize-with-neon-quad -fsched-spec-load -fforce-addr
 endif
 CFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
 AFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
@@ -398,6 +402,17 @@ export KBUILD_AFLAGS AFLAGS_KERNEL AFLAGS_MODULE
 export KBUILD_AFLAGS_MODULE KBUILD_CFLAGS_MODULE KBUILD_LDFLAGS_MODULE
 export KBUILD_AFLAGS_KERNEL KBUILD_CFLAGS_KERNEL
 export KBUILD_ARFLAGS
+
+ifdef CONFIG_CC_LTO
+# LTO gcc creates a lot of files in TMPDIR, and with /tmp as tmpfs
+# it's easy to drive the machine OOM. Use the object directory
+# instead.
+ifndef TMPDIR
+TMPDIR ?= $(objtree)
+export TMPDIR
+$(info setting TMPDIR=$(objtree) for LTO build)
+endif
+endif
 
 # When compiling out-of-tree modules, put MODVERDIR in the module
 # tree rather than in the kernel tree. The kernel tree might
@@ -572,21 +587,23 @@ ifndef CONFIG_CC_OPTIMIZE_MORE
   endif
 else
 KBUILD_CFLAGS	+= -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves \
-			-fno-inline-functions -fno-tree-vectorize
+			-fno-inline-functions -fno-tree-vectorize -pthread
 endif
 
-#Optimization flags for LGE X3
-ifdef CONFIG_MACH_X3
-#cortex-a9 flags
-KBUILD_CFLAGS += -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon \
-		 -ffast-math -fsingle-precision-constant \
-		 -fgcse-lm -fgcse-sm -fsched-spec-load -fforce-addr
-endif
+ifdef CONFIG_GRAPHITE_FLAGS
+KBUILD_CFLAGS	+= -fgraphite -fgraphite-identity -floop-flatten \
+		-floop-parallelize-all -ftree-loop-linear -floop-interchange \
+		-floop-strip-mine -floop-block -floop-nest-optimize \
+		-Wno-error=maybe-uninitialized
 
+export DISABLE_GRAPHITE_FLAGS = -fno-graphite -fno-graphite-identity -fno-loop-flatten \
+	-fno-loop-parallelize-all -fno-tree-loop-linear -fno-loop-interchange
+endif
 #Perform Link Time Optimization (LTO)
-ifdef CC_LTO
+ifdef CONFIG_CC_LTO
 KBUILD_CFLAGS += -flto -fno-toplevel-reorder
-LDFLAGS += -flto -fno-toplevel-reorder
+#LDFLAGS += -flto 
+export DISABLE_LTO = -fno-lto
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
