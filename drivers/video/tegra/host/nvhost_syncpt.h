@@ -44,7 +44,7 @@ struct nvhost_syncpt {
 	atomic_t *lock_counts;
 	const char **syncpt_names;
 	struct nvhost_syncpt_attr *syncpt_attrs;
-#if CONFIG_TEGRA_GRHOST_SYNC
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
 	struct nvhost_sync_timeline **timeline;
 	struct nvhost_sync_timeline *timeline_invalid;
 	struct nvhost_syncpt_attr invalid_min_attr;

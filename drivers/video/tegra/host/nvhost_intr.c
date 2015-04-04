@@ -167,7 +167,7 @@ static void action_wakeup_interruptible(struct nvhost_waitlist *waiter)
 
 static void action_signal_sync_pt(struct nvhost_waitlist *waiter)
 {
-#if CONFIG_TEGRA_GRHOST_SYNC
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
 	struct nvhost_sync_pt *pt = waiter->data;
 	nvhost_sync_pt_signal(pt);
 #endif

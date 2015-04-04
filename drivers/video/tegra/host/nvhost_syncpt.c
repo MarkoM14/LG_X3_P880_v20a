@@ -455,7 +455,7 @@ int nvhost_syncpt_patch_wait(struct nvhost_syncpt *sp, void *patch_addr)
 	return syncpt_op().patch_wait(sp, patch_addr);
 }
 
-#if CONFIG_TEGRA_GRHOST_SYNC
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
 struct nvhost_sync_timeline *nvhost_syncpt_timeline(struct nvhost_syncpt *sp,
 		int idx)
 {
@@ -542,7 +542,7 @@ int nvhost_syncpt_init(struct nvhost_device *dev,
 	sp->lock_counts =
 		kzalloc(sizeof(atomic_t) * nvhost_syncpt_nb_mlocks(sp),
 			GFP_KERNEL);
-#if CONFIG_TEGRA_GRHOST_SYNC
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
 	sp->timeline = kzalloc(sizeof(struct nvhost_sync_timeline *) *
 			nvhost_syncpt_nb_pts(sp), GFP_KERNEL);
 	if (!sp->timeline) {
@@ -613,7 +613,7 @@ fail:
 
 static void nvhost_syncpt_deinit_timeline(struct nvhost_syncpt *sp)
 {
-#if CONFIG_TEGRA_GRHOST_SYNC
+#ifdef CONFIG_TEGRA_GRHOST_SYNC
 	int i;
 	for (i = 0; i < nvhost_syncpt_nb_pts(sp); i++) {
 		if (sp->timeline && sp->timeline[i]) {
