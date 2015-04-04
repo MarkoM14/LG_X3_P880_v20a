@@ -51,6 +51,7 @@ static int x3_wifi_status_register(void (*callback)(int , void *), void *);
 static int x3_wifi_reset(int on);
 static int x3_wifi_power(int on);
 static int x3_wifi_set_carddetect(int val);
+static void* x3_wifi_get_country_code(char *country_iso_code, u32 flags);
 
 #ifdef CONFIG_DHD_USE_STATIC_BUF
 #define WLAN_STATIC_SCAN_BUF0		5
@@ -162,6 +163,7 @@ static struct wifi_platform_data x3_wifi_control = {
 	.set_power      = x3_wifi_power,
 	.set_reset      = x3_wifi_reset,
 	.set_carddetect = x3_wifi_set_carddetect,
+	.get_country_code = x3_wifi_get_country_code,
 #if defined(CONFIG_DHD_USE_STATIC_BUF)
 	.mem_prealloc   = x3_wifi_mem_prealloc,
 #endif
@@ -335,6 +337,42 @@ static int x3_wifi_set_carddetect(int val)
 	else
 		pr_warning("%s: Nobody to notify\n", __func__);
 	return 0;
+}
+
+/* Customized Locale table : OPTIONAL feature */
+#define WLC_CNTRY_BUF_SZ	4		/* Country string is 3 bytes + NUL */
+
+struct cntry_locales_custom {
+	char iso_abbrev[WLC_CNTRY_BUF_SZ];	/* ISO 3166-1 country abbreviation */
+	char custom_locale[WLC_CNTRY_BUF_SZ];	/* Custom firmware locale */
+	s32 custom_locale_rev;		/* Custom local revisin default -1 */
+};
+
+struct cntry_locales_custom country_code_custom_table[] = {
+/* Table should be filled out based on custom platform regulatory requirement */
+	{"RU", "XY", 4},
+	{"IR", "XY", 4}
+};
+
+static void* x3_wifi_get_country_code(char *country_iso_code, u32 flags)
+{
+	struct cntry_locales_custom *locales;
+	int size, i;
+
+	locales = country_code_custom_table;
+	size = ARRAY_SIZE(country_code_custom_table);
+
+	if (size == 0)
+		return NULL;
+
+	if (!country_iso_code)
+		return NULL;
+
+	for (i = 0; i < size; i++) {
+		if (strcmp(country_iso_code, locales[i].iso_abbrev) == 0)
+			return &locales[i];
+	}
+	return NULL;
 }
 
 static int x3_wifi_power(int on)
