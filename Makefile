@@ -596,8 +596,10 @@ KBUILD_CFLAGS	+= -fgraphite -fgraphite-identity -floop-flatten \
 		-floop-strip-mine -floop-block -floop-nest-optimize \
 		-Wno-error=maybe-uninitialized
 
-export DISABLE_GRAPHITE_FLAGS = -fno-graphite -fno-graphite-identity -fno-loop-flatten \
-	-fno-loop-parallelize-all -fno-tree-loop-linear -fno-loop-interchange
+export DISABLE_GRAPHITE_FLAGS = -fno-graphite -fno-graphite-identity \
+			-fno-loop-flatten -fno-loop-parallelize-all \
+			-fno-tree-loop-linear -fno-loop-interchange \
+			-fno-loop-nest-optimize
 endif
 #Perform Link Time Optimization (LTO)
 ifdef CONFIG_CC_LTO
