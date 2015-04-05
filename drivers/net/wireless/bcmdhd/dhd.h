@@ -247,6 +247,7 @@ typedef struct dhd_pub {
 	int pktfilter_count;
 
 	wl_country_t dhd_cspec;		/* Current Locale info */
+	u32 dhd_cflags;
 	char eventmask[WL_EVENTING_MASK_LEN];
 	int	op_mode;				/* STA, HostAPD, WFD, SoftAP */
 
@@ -536,7 +537,8 @@ extern void dhd_os_tcpackunlock(dhd_pub_t *pub);
 extern int dhd_customer_oob_irq_map(void *adapter, unsigned long *irq_flags_ptr);
 extern int dhd_customer_gpio_wlan_ctrl(void *adapter, int onoff);
 extern int dhd_custom_get_mac_address(void *adapter, unsigned char *buf);
-extern void get_customized_country_code(void *adapter, char *country_iso_code, wl_country_t *cspec);
+extern void get_customized_country_code(void *adapter, char *country_iso_code,
+	wl_country_t *cspec, u32 flags);
 extern void dhd_os_sdunlock_sndup_rxq(dhd_pub_t * pub);
 extern void dhd_os_sdlock_eventq(dhd_pub_t * pub);
 extern void dhd_os_sdunlock_eventq(dhd_pub_t * pub);

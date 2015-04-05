@@ -6000,7 +6000,8 @@ void dhd_get_customized_country_code(struct net_device *dev, char *country_iso_c
 	wl_country_t *cspec)
 {
 	dhd_info_t *dhdinfo = *(dhd_info_t **)netdev_priv(dev);
-	get_customized_country_code(dhdinfo->adapter, country_iso_code, cspec);
+	get_customized_country_code(dhdinfo->adapter, country_iso_code, cspec,
+				    dhdinfo->pub.dhd_cflags);
 }
 void dhd_bus_country_set(struct net_device *dev, wl_country_t *cspec, bool notify)
 {
