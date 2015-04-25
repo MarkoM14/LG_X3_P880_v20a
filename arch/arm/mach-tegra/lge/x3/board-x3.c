@@ -709,9 +709,17 @@ static void __init tegra_x3_init(void)
 static void __init tegra_x3_reserve(void)
 {
 #if defined(CONFIG_NVMAP_CONVERT_CARVEOUT_TO_IOVMM)
+#if defined(CONFIG_DISABLE_FB1_AND_HDMI)
+        tegra_reserve(0, SZ_8M + SZ_2M, 0);
+#else
 	tegra_reserve(0, SZ_8M, SZ_8M);
+#endif /*DISABLE_FB1_AND_HDMI*/
+#else
+#if defined(CONFIG_DISABLE_FB1_AND_HDMI)
+	tegra_reserve(SZ_128M, SZ_8M + SZ_2M, 0);
 #else
 	tegra_reserve(SZ_128M, SZ_8M, SZ_8M);
+#endif /*DISABLE_FB1_AND_HDMI*/
 #endif
 	tegra_ram_console_debug_reserve(SZ_1M);
 }
