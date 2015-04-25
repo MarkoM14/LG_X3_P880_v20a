@@ -133,6 +133,7 @@ static char __initdata cmd_line[COMMAND_LINE_SIZE];
 struct machine_desc *machine_desc __initdata;
 
 static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
+static char override_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE_OVERRIDE_BOOTLOADER;
 static union { char c[4]; unsigned long l; } endian_test __initdata = { { 'l', '?', '?', 'b' } };
 #define ENDIANNESS ((char)endian_test.l)
 
@@ -670,6 +671,8 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
 	strlcat(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
+	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
+	strlcat(default_command_line, override_line, COMMAND_LINE_SIZE);
 #elif defined(CONFIG_CMDLINE_FORCE)
 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
 #else
