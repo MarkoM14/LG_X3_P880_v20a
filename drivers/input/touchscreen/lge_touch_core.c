@@ -2512,11 +2512,11 @@ static ssize_t show_virtual_key(struct lge_touch_data *ts, char *buf)
 
 }
 
-static ssize_t show_test_report(struct lge_touch_data *ts, char *buf, size_t count)
+static ssize_t show_test_report(struct lge_touch_data *ts, char *buf)
 {
 
 	int ret = 0;
-	//                                                   
+	size_t count = 0;
 
 	TOUCH_INFO_MSG("%s\n",__func__);
 
@@ -2567,7 +2567,7 @@ static ssize_t store_test_report(struct lge_touch_data *ts, const char *buf, siz
 }
 
 
-static ssize_t show_test_report_type(struct lge_touch_data *ts, char *buf, size_t count)
+static ssize_t show_test_report_type(struct lge_touch_data *ts, char *buf)
 {
 	int ret = 0;
 
@@ -2636,7 +2636,7 @@ static ssize_t store_accuracy_solution(struct lge_touch_data *ts, const char *bu
 	return count;
 }
 
-static ssize_t keypad_enable_read(struct lge_touch_data *ts, const char *buf, size_t count)
+static ssize_t keypad_enable_show(struct lge_touch_data *ts, char *buf)
 {
         return sprintf(buf, "%d\n", atomic_read(&ts->keypad_enable));
 }
@@ -2675,7 +2675,7 @@ static LGE_TOUCH_ATTR(test_report, S_IRUGO | S_IWUSR, show_test_report, store_te
 static LGE_TOUCH_ATTR(test_report_type, S_IRUGO | S_IWUSR, show_test_report_type, store_test_report_type);
 static LGE_TOUCH_ATTR(jitter, S_IRUGO | S_IWUSR, NULL, store_jitter_solution);
 static LGE_TOUCH_ATTR(accuracy, S_IRUGO | S_IWUSR, NULL, store_accuracy_solution);
-static LGE_TOUCH_ATTR(keypad_enable, S_IRUGO | S_IWUSR, keypad_enable_read, keypad_enable_store);
+static LGE_TOUCH_ATTR(keypad_enable, S_IRUGO | S_IWUSR, keypad_enable_show, keypad_enable_store);
 
 
 
@@ -3007,7 +3007,7 @@ err_power_failed:
 err_assign_platform_data:
 	kfree(ts);
 err_alloc_data_failed:
-err_check_functionality_failed:
+//err_check_functionality_failed:
 	return ret;
 }
 

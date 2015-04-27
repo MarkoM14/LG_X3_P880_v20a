@@ -706,7 +706,7 @@ static ssize_t show_UV_mV_table(struct cpufreq_policy *policy, char *buf)
 	return out - buf;
 }
 
-static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, char *buf, size_t count)
+static ssize_t store_UV_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
 	int i = 0;
 	unsigned long volt_cur;
@@ -757,7 +757,7 @@ static ssize_t show_lp_UV_mV_table(struct cpufreq_policy *policy, char *buf)
 	return out - buf;
 }
 
-static ssize_t store_lp_UV_mV_table(struct cpufreq_policy *policy, char *buf, size_t count)
+static ssize_t store_lp_UV_mV_table(struct cpufreq_policy *policy, const char *buf, size_t count)
 {
 	int i;
 	struct clk *cpu_clk_lp = tegra_get_clock_by_name("cpu_lp");
@@ -915,7 +915,7 @@ static ssize_t store_gpu_oc(struct cpufreq_policy *policy, const char *buf, size
 }
 #endif
 
-static ssize_t show_tegra_cpu_variant(struct cpufreq_policy *policy, char *buf, size_t count)
+static ssize_t show_tegra_cpu_variant(struct cpufreq_policy *policy, char *buf)
 {
 	int cpu_process_id = tegra_cpu_process_id();
 	char *out = buf;
@@ -932,7 +932,7 @@ static ssize_t show_tegra_cpu_variant(struct cpufreq_policy *policy, char *buf, 
 	return out - buf;
 }
 
-static ssize_t show_gpu_cur_freq(struct cpufreq_policy *policy, char *buf, size_t count)
+static ssize_t show_gpu_cur_freq(struct cpufreq_policy *policy, char *buf)
 {
 	struct clk *clk_3d = tegra_get_clock_by_name("3d");
 	struct clk *clk_2d = tegra_get_clock_by_name("2d");
