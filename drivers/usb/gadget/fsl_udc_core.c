@@ -88,7 +88,7 @@ static struct usb_sys_interface *usb_sys_regs;
 static struct fsl_udc *udc_controller = NULL;
 
 #ifdef CONFIG_TEGRA_GADGET_BOOST_CPU_FREQ
-static struct pm_qos_request_list boost_cpu_freq_req;
+static struct pm_qos_request boost_cpu_freq_req;
 static u32 ep_queue_request_count;
 static u8 boost_cpufreq_work_flag;
 #endif

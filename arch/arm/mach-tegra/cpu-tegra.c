@@ -61,8 +61,8 @@ static unsigned long target_cpu_speed[CONFIG_NR_CPUS];
 static DEFINE_MUTEX(tegra_cpu_lock);
 static bool is_suspended;
 static int suspend_index;
-static struct pm_qos_request_list cpufreq_max_req;
-static struct pm_qos_request_list cpufreq_min_req;
+static struct pm_qos_request cpufreq_max_req;
+static struct pm_qos_request cpufreq_min_req;
 
 static bool force_policy_max;
 static bool device_booted = false;
@@ -178,7 +178,7 @@ static bool system_edp_alarm;
 static int edp_thermal_index;
 static cpumask_t edp_cpumask;
 static unsigned int edp_limit;
-static struct pm_qos_request_list edp_max_cpus;
+static struct pm_qos_request edp_max_cpus;
 
 unsigned int tegra_get_edp_limit(void)
 {

@@ -2467,8 +2467,8 @@ static int cpu_freq_notify(struct notifier_block *b,
 }
 
 //                                                                                     
-static struct pm_qos_request_list cpu_freq_min_req;
-static struct pm_qos_request_list cpu_freq_max_req;
+static struct pm_qos_request cpu_freq_min_req;
+static struct pm_qos_request cpu_freq_max_req;
 
 int cpufreq_set_min_freq(void *data, s32 val)
 {
