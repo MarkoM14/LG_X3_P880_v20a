@@ -67,9 +67,6 @@ struct lge_touch_data
 	struct ghost_finger_ctrl	gf_ctrl;
 	struct jitter_filter_info	jitter_filter;
 	struct accuracy_filter_info	accuracy_filter;
-#if 0
-	u8				wait_first_touch_detected;
-#endif
         atomic_t keypad_enable;
 };
 
@@ -82,6 +79,7 @@ struct lge_touch_attribute {
 	ssize_t (*store)(struct lge_touch_data *ts, const char *buf, size_t count);
 };
 
+#ifdef TOUCH_SCREEN_DOUBLETAP
 bool suspended = false;
 unsigned int irq_wake;
 unsigned int min_time = 150; /* msecs */
@@ -95,6 +93,7 @@ cputime64_t touch_time = 0;
 
 bool doubletap_to_wake = false;
 module_param(doubletap_to_wake, bool, 0664);
+#endif
 
 #define LGE_TOUCH_ATTR(_name, _mode, _show, _store)	\
 struct lge_touch_attribute lge_touch_attr_##_name = __ATTR(_name, _mode, _show, _store)
@@ -165,18 +164,11 @@ EXPORT_SYMBOL(Send_Touch);
 
 int get_touch_ts_fw_version(char *fw_ver)
 {
-	if (touch_test_dev)
-	{
-	  #if 0 // only for synaptics 3000 serise 
-		sprintf(fw_ver, "%d.0%d", touch_test_dev->fw_info.manufacturer_id,
-				touch_test_dev->fw_info.fw_rev);
-	  #else // for synaptics 3200 serise (S3203) and 7000 serise 
+	if (touch_test_dev) {
+		// for synaptics 3200 serise (S3203) and 7000 serise 
 		sprintf(fw_ver, "%s", touch_test_dev->fw_info.config_id); 
-	  #endif 
 		return 1;
-	}
-	else
-	{
+	} else {
 		return 0;
 	}
 }
@@ -206,8 +198,6 @@ void* get_touch_handle(struct i2c_client *client)
  */
 int touch_i2c_read(struct i2c_client *client, u8 reg, int len, u8 *buf)
 {
-#if 1
-
 	int err = 0;
 	int retry = 0;
 	do
@@ -221,36 +211,10 @@ int touch_i2c_read(struct i2c_client *client, u8 reg, int len, u8 *buf)
 		return -EIO;
 	} else
 		return 0;
-
-#else
-	struct i2c_msg msgs[] = {
-		{
-			.addr = client->addr,
-			.flags = 0,
-			.len = 1,
-			.buf = &reg,
-		},
-		{
-			.addr = client->addr,
-			.flags = I2C_M_RD,
-			.len = len,
-			.buf = buf,
-		},
-	};
-
-	if (i2c_transfer(client->adapter, msgs, 2) < 0) {
-		if (printk_ratelimit())
-			TOUCH_ERR_MSG("transfer error\n");
-		return -EIO;
-	} else
-		return 0;
-#endif	
 }
 
 int touch_i2c_write(struct i2c_client *client, u8 reg, int len, u8 * buf)
 {
-#if 1
-
 	int err = 0;
 	int retry = 0;
 	do
@@ -265,33 +229,10 @@ int touch_i2c_write(struct i2c_client *client, u8 reg, int len, u8 * buf)
 		return -EIO;
 	} else
 		return 0;
-
-#else
-	unsigned char send_buf[len + 1];
-	struct i2c_msg msgs[] = {
-		{
-			.addr = client->addr,
-			.flags = client->flags,
-			.len = len+1,
-			.buf = send_buf,
-		},
-	};
-
-	send_buf[0] = (unsigned char)reg;
-	memcpy(&send_buf[1], buf, len);
-
-	if (i2c_transfer(client->adapter, msgs, 1) < 0) {
-		if (printk_ratelimit())
-			TOUCH_ERR_MSG("transfer error\n");
-		return -EIO;
-	} else
-		return 0;
-#endif
 }
 
 int touch_i2c_write_byte(struct i2c_client *client, u8 reg, u8 data)
 {
-#if 1
 	int err = 0;
 	int retry = 0;
 	do
@@ -306,28 +247,6 @@ int touch_i2c_write_byte(struct i2c_client *client, u8 reg, u8 data)
 		return -EIO;
 	} else
 		return 0;
-
-#else
-	unsigned char send_buf[2];
-	struct i2c_msg msgs[] = {
-		{
-			.addr = client->addr,
-			.flags = client->flags,
-			.len = 2,
-			.buf = send_buf,
-		},
-	};
-
-	send_buf[0] = (unsigned char)reg;
-	send_buf[1] = (unsigned char)data;
-
-	if (i2c_transfer(client->adapter, msgs, 1) < 0) {
-		if (printk_ratelimit())
-			TOUCH_ERR_MSG("transfer error\n");
-		return -EIO;
-	} else
-		return 0;
-#endif
 }
 
 #ifdef LGE_TOUCH_TIME_DEBUG
@@ -975,6 +894,7 @@ static void touch_lock_func(struct work_struct *work_touch_lock)
 	ts->ts_data.state = DO_NOT_ANYTHING;
 }
 
+#ifdef TOUCH_SCREEN_DOUBLETAP
 static struct input_dev *double_tap_pwrdev;
 
 extern void double_tap_setdev(struct input_dev *input_dev)
@@ -984,7 +904,7 @@ extern void double_tap_setdev(struct input_dev *input_dev)
 }
 
 EXPORT_SYMBOL(double_tap_setdev);
-
+#endif
 
 /* touch_work_func_a
  *
@@ -1161,8 +1081,9 @@ static void touch_work_func_a(struct work_struct *work)
 					ts->ts_data.state = TOUCH_ABS_LOCK;
 
 				queue_delayed_work(touch_wq, &ts->work_touch_lock, msecs_to_jiffies(200));
-	
+#ifdef TOUCH_SCREEN_DOUBLETAP
 				if (!suspended)
+#endif
 					input_report_key(ts->input_dev, ts->ts_data.curr_button.key_code, BUTTON_PRESSED);
 
 				if (likely(touch_debug_mask & (DEBUG_BUTTON | DEBUG_BASE_INFO)))
@@ -1308,7 +1229,7 @@ static void touch_work_func_b(struct work_struct *work)
 	int int_pin = 0;
 	int next_work = 0;
 
-#if 1
+#ifdef TOUCH_SCREEN_DOUBLETAP
 	if (suspended && doubletap_to_wake){
 	
 		ts->ts_data.state = ABS_PRESS;
@@ -1469,9 +1390,6 @@ static void touch_work_func_b(struct work_struct *work)
 	switch(ts->ts_data.state){
 	case ABS_PRESS:
 abs_report:
-
-		input_event(ts->input_dev, EV_MSC, MSC_ACTIVITY, 1);
-
 		i=0;
 		while(ts->ts_data.total_num--) {
 			if (ts->ts_data.curr_data[ts->ts_data.total_num].y_position
@@ -1551,8 +1469,9 @@ abs_report:
 		input_mt_sync(ts->input_dev);
 		break;
 	case BUTTON_PRESS:
+#ifdef TOUCH_SCREEN_DOUBLETAP
 		if (!suspended)
-			input_event(ts->input_dev, EV_MSC, MSC_ACTIVITY, 1);
+#endif
 			input_report_key(ts->input_dev, ts->ts_data.curr_button.key_code, BUTTON_PRESSED);
 				if (unlikely(touch_debug_mask & DEBUG_BUTTON))
 				TOUCH_INFO_MSG("Touch KEY[%d] is pressed\n", ts->ts_data.curr_button.key_code);
@@ -1669,15 +1588,6 @@ static void touch_work_func_c(struct work_struct *work)
 		TOUCH_ERR_MSG("get data fail\n");
 		goto err_out_critical;
 	}
-
-#if 0
-	if(ts->wait_first_touch_detected)
-	{
-		ts->wait_first_touch_detected = 0;
-		cpufreq_set_max_freq(NULL, LONG_MAX);
-		tegra_auto_hotplug_set_max_cpus(0);
-	}
-#endif
 
 	if(likely(ts->pdata->role->operation_mode == INTERRUPT_MODE))
 		int_pin = gpio_get_value(ts->pdata->int_pin);
@@ -1845,16 +1755,6 @@ static void touch_fw_upgrade_func(struct work_struct *work_fw_upgrade)
 
 	ts->fw_upgrade.is_downloading = UNDER_DOWNLOADING;
 
-#if 0 //only for 3000 serise 
-	if (((ts->fw_info.fw_rev >= ts->fw_info.fw_image_rev
-		  /*	&& ts->fw_info.fw_rev < 100*/ )	/* test revision should be over 100 */
-		 /*|| strncmp(ts->fw_info.product_id , ts->fw_info.fw_image_product_id, 10)*/)
-			&& !ts->fw_upgrade.fw_force_upgrade){
-		TOUCH_INFO_MSG("FW-upgrade is not executed\n");
-		goto out;
-	}
-#endif
-
 	// S3200 series [START] ---------------------------------------- 
         // formal version :  S001, S002, ... ,S00N
 	// test   version :  E001, E002, ... ,E00N
@@ -2016,6 +1916,9 @@ static irqreturn_t touch_thread_irq_handler(int irq, void *dev_id)
 #ifdef LGE_TOUCH_TIME_DEBUG
 	do_gettimeofday(&t_debug[TIME_THREAD_ISR_START]);
 #endif
+
+	/* CPU Boost */
+	input_event(ts->input_dev, EV_MSC, MSC_ACTIVITY, 1);
 
 	disable_irq_nosync(ts->client->irq);
 	queue_work(touch_wq, &ts->work);
@@ -2276,12 +2179,9 @@ static ssize_t show_fw_ver(struct lge_touch_data *ts, char *buf)
 {
 	int ret = 0;
 
-	#if 0 // only for synaptics 3000 serise 
-		ret = sprintf(buf, "%d\n", ts->fw_info.fw_rev);
-	#else // for synaptics 3200 serise (S3203) and 7000 serise 
-		ret = sprintf(buf, "%s\n", ts->fw_info.config_id);
-	#endif
-	
+	// for synaptics 3200 serise (S3203) and 7000 serise 
+	ret = sprintf(buf, "%s\n", ts->fw_info.config_id);
+
 	return ret;
 }
 
@@ -2758,14 +2658,6 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	if (unlikely(touch_debug_mask & DEBUG_TRACE))
 		TOUCH_DEBUG_MSG("\n");
 
-#if 0
-	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-		TOUCH_ERR_MSG("i2c functionality check error\n");
-		ret = -EPERM;
-		goto err_check_functionality_failed;
-	}
-#endif
-
 	ts = kzalloc(sizeof(struct lge_touch_data), GFP_KERNEL);
 	if (ts == NULL) {
 		TOUCH_ERR_MSG("Can not allocate memory\n");
@@ -2794,10 +2686,6 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	ts->client = client;
 	i2c_set_clientdata(client, ts);
 	
-#if 0
-	ts->wait_first_touch_detected = 0;
-#endif
-
 	/* Specific device probe */
 	if (touch_device_func->probe) {
 		ret = touch_device_func->probe(client);
@@ -2864,10 +2752,7 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 
 	set_bit(EV_SYN, ts->input_dev->evbit);
 	set_bit(EV_ABS, ts->input_dev->evbit);
-//#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 0, 0))
-#if 1
 	set_bit(INPUT_PROP_DIRECT, ts->input_dev->propbit); //to prevent hovering (showing cursor like mouse pointer)
-#endif
 
 	if (ts->pdata->caps->button_support && ts->pdata->role->key_type != VIRTUAL_KEY) {
 		set_bit(EV_KEY, ts->input_dev->evbit);
@@ -2899,6 +2784,8 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 		goto err_input_register_device_failed;
 	}
 
+	/* CPU Boost when entring irq handler*/
+	input_set_capability(ts->input_dev, EV_MSC, MSC_ACTIVITY);
 
 	/* interrupt mode */
 	if (ts->pdata->role->operation_mode) {
@@ -3049,22 +2936,20 @@ static void touch_early_suspend(struct early_suspend *h)
 	struct lge_touch_data *ts =
 			container_of(h, struct lge_touch_data, early_suspend);
 
-	suspended = true;
-
 	if (ts->fw_upgrade.is_downloading == UNDER_DOWNLOADING){
 		TOUCH_INFO_MSG("early_suspend is not executed\n");
 		return;
 	}
+#ifdef TOUCH_SCREEN_DOUBLETAP
+	suspended = true;
 
-	if (doubletap_to_wake)
-	{
-		if (!enable_irq_wake(ts->client->irq)){
+	if (doubletap_to_wake) {
+		if (!enable_irq_wake(ts->client->irq)) {
 			pr_info("Touchscreen DT2W: enable_irq_wake\n");
 			irq_wake = 1;
 		}
-	}
-	else 
-	{
+	} else {
+#endif
 		if (ts->pdata->role->operation_mode)
 			disable_irq(ts->client->irq);
 		else
@@ -3078,9 +2963,8 @@ static void touch_early_suspend(struct early_suspend *h)
 		release_all_ts_event(ts);
 	
 		touch_power_cntl(ts, ts->pdata->role->suspend_pwr);
+#ifdef TOUCH_SCREEN_DOUBLETAP
 	}
-#if 0
-	ts->wait_first_touch_detected = 0;
 #endif
 }
 
@@ -3088,16 +2972,17 @@ static void touch_late_resume(struct early_suspend *h)
 {
 	struct lge_touch_data *ts =
 			container_of(h, struct lge_touch_data, early_suspend);
-	
-	int int_pin = 0;
-        int next_work = 0;
-	suspended = false;
 
+#ifdef TOUCH_SCREEN_DOUBLETAP
+	int int_pin = 0;
+	int next_work = 0;
+	suspended = false;
+#endif
 	if (ts->fw_upgrade.is_downloading == UNDER_DOWNLOADING){
 		TOUCH_INFO_MSG("late_resume is not executed\n");
 		return;
 	}
-
+#ifdef TOUCH_SCREEN_DOUBLETAP
 	if (doubletap_to_wake){
 
 		if (irq_wake){
@@ -3118,15 +3003,9 @@ static void touch_late_resume(struct early_suspend *h)
 				touch_ic_init(ts);
 				}
 		}
-
-	}
-	else
-	{
-		touch_power_cntl(ts, ts->pdata->role->resume_pwr);
-
-#if 0
-		ts->wait_first_touch_detected = 1;     
+	} else {
 #endif
+		touch_power_cntl(ts, ts->pdata->role->resume_pwr);
 
 		if (ts->pdata->role->operation_mode)
 			enable_irq(ts->client->irq);
@@ -3138,7 +3017,9 @@ static void touch_late_resume(struct early_suspend *h)
 					msecs_to_jiffies(ts->pdata->role->booting_delay));
 		else
 			queue_delayed_work(touch_wq, &ts->work_init, 0);
+#ifdef TOUCH_SCREEN_DOUBLETAP
 	}
+#endif
 }
 #endif
 

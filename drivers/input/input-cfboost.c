@@ -1,30 +1,25 @@
 /*
  * drivers/input/input-cfboost.c
  *
- * Copyright (C) 2012 NVIDIA Corporation
+ * Copyright (c) 2012-2014, NVIDIA CORPORATION.  All rights reserved.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 2 of the License.
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
+ * This program is distributed in the hope it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
  */
 
 #include <linux/slab.h>
-#include <linux/jiffies.h>
 #include <linux/printk.h>
-#include <linux/workqueue.h>
+#include <linux/kthread.h>
 #include <linux/input.h>
 #include <linux/module.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
+#include <linux/pm_runtime.h>
+#include <linux/syscalls.h>
 
 /* This module listens to input events and sets a temporary frequency
  * floor upon input event detection. This is based on changes to
@@ -48,34 +43,56 @@ MODULE_DESCRIPTION("Input event CPU frequency booster");
 MODULE_LICENSE("GPL v2");
 
 
-static struct pm_qos_request_list freq_req, core_req;
-static struct work_struct boost;
-static struct delayed_work unboost;
-static unsigned int boost_freq = 475000; /* kHz */
-module_param(boost_freq, uint, 0644);
-static unsigned long boost_time = 250; /* ms */
+static struct pm_qos_request freq_req, core_req;
+static unsigned int boost_freq = 760000; /* kHz */
+static int boost_freq_set(const char *arg, const struct kernel_param *kp)
+{
+	unsigned int old_boost = boost_freq;
+	int ret = param_set_uint(arg, kp);
+	if (ret == 0 && old_boost && !boost_freq)
+		pm_qos_update_request(&freq_req,
+				      PM_QOS_DEFAULT_VALUE);
+	return ret;
+}
+static int boost_freq_get(char *buffer, const struct kernel_param *kp)
+{
+	return param_get_uint(buffer, kp);
+}
+static struct kernel_param_ops boost_freq_ops = {
+	.set = boost_freq_set,
+	.get = boost_freq_get,
+};
+module_param_cb(boost_freq, &boost_freq_ops, &boost_freq, 0644);
+static unsigned long boost_time = 400; /* ms */
 module_param(boost_time, ulong, 0644);
-static struct workqueue_struct *cfb_wq;
+static unsigned long boost_cpus;
+module_param(boost_cpus, ulong, 0644);
 
-static void cfb_boost(struct work_struct *w)
+static unsigned long last_boost_jiffies;
+
+static void cfb_boost(struct kthread_work *w)
 {
-	cancel_delayed_work_sync(&unboost);
-	pm_qos_update_request(&core_req, 1);
-	pm_qos_update_request(&freq_req, boost_freq);
-	queue_delayed_work(cfb_wq, &unboost, msecs_to_jiffies(boost_time));
+	if (boost_cpus > 0)
+		pm_qos_update_request_timeout(&core_req, boost_cpus,
+				boost_time * 1000);
+
+	if (boost_freq > 0)
+		pm_qos_update_request_timeout(&freq_req, boost_freq,
+				boost_time * 1000);
 }
 
-static void cfb_unboost(struct work_struct *w)
-{
-	pm_qos_update_request(&freq_req, PM_QOS_DEFAULT_VALUE);
-	pm_qos_update_request(&core_req, PM_QOS_DEFAULT_VALUE);
-}
+static struct task_struct *boost_kthread;
+static DEFINE_KTHREAD_WORKER(boost_worker);
+static DEFINE_KTHREAD_WORK(boost_work, &cfb_boost);
 
 static void cfb_input_event(struct input_handle *handle, unsigned int type,
 			    unsigned int code, int value)
 {
-	if (!work_pending(&boost))
-		queue_work(cfb_wq, &boost);
+	if (jiffies < last_boost_jiffies ||
+		jiffies > last_boost_jiffies + msecs_to_jiffies(boost_time/2)) {
+		queue_kthread_work(&boost_worker, &boost_work);
+		last_boost_jiffies = jiffies;
+	}
 }
 
 static int cfb_input_connect(struct input_handler *handler,
@@ -118,17 +135,15 @@ static void cfb_input_disconnect(struct input_handle *handle)
 
 /* XXX make configurable */
 static const struct input_device_id cfb_ids[] = {
-	{ /* touch screen */
+	{ /* touch screens send this at wakeup */
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-				INPUT_DEVICE_ID_MATCH_KEYBIT,
-		.evbit = { BIT_MASK(EV_ABS) },
-		.keybit = {[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH) },
+				INPUT_DEVICE_ID_MATCH_MSCIT,
+		.evbit = { BIT_MASK(EV_MSC) },
+		.mscbit = {BIT_MASK(MSC_ACTIVITY)},
 	},
-	{ /* mouse */
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-				INPUT_DEVICE_ID_MATCH_KEYBIT,
-		.evbit = { BIT_MASK(EV_REL) },
-		.keybit = {[BIT_WORD(BTN_MOUSE)] = BIT_MASK(BTN_MOUSE) },
+	{ /* trigger on any touch screen events */
+		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
+		.evbit = { BIT_MASK(EV_ABS) },
 	},
 	/* keypad */
 	{
@@ -149,44 +164,6 @@ static const struct input_device_id cfb_ids[] = {
 		.evbit = { BIT_MASK(EV_KEY) },
 		.keybit = {[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER) },
 	},
-	/* joystick */
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.evbit = { BIT_MASK(EV_ABS) },
-		.absbit = { BIT_MASK(ABS_X) },
-	},
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.evbit = { BIT_MASK(EV_ABS) },
-		.absbit = { BIT_MASK(ABS_WHEEL) },
-	},
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			INPUT_DEVICE_ID_MATCH_ABSBIT,
-		.evbit = { BIT_MASK(EV_ABS) },
-		.absbit = { BIT_MASK(ABS_THROTTLE) },
-	},
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			INPUT_DEVICE_ID_MATCH_KEYBIT,
-		.evbit = { BIT_MASK(EV_KEY) },
-		.keybit = {[BIT_WORD(BTN_JOYSTICK)] = BIT_MASK(BTN_JOYSTICK) },
-	},
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			INPUT_DEVICE_ID_MATCH_KEYBIT,
-		.evbit = { BIT_MASK(EV_KEY) },
-		.keybit = { [BIT_WORD(BTN_GAMEPAD)] = BIT_MASK(BTN_GAMEPAD) },
-	},
-	{
-		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
-			INPUT_DEVICE_ID_MATCH_KEYBIT,
-		.evbit = { BIT_MASK(EV_KEY) },
-		.keybit = { [BIT_WORD(BTN_TRIGGER_HAPPY)] =
-			BIT_MASK(BTN_TRIGGER_HAPPY) },
-	},
 	/* terminating entry */
 	{ },
 };
@@ -201,22 +178,34 @@ static struct input_handler cfb_input_handler = {
 
 static int __init cfboost_init(void)
 {
+	struct sched_param sparm = {
+		/* use the last RT priority */
+		.sched_priority = MAX_RT_PRIO - 10
+	};
 	int ret;
 
-	cfb_wq = create_workqueue("icfb-wq");
-	if (!cfb_wq)
-		return -ENOMEM;
-	INIT_WORK(&boost, cfb_boost);
-	INIT_DELAYED_WORK(&unboost, cfb_unboost);
+	/* create RT kthread */
+	boost_kthread = kthread_run(&kthread_worker_fn, &boost_worker,
+			"icfb-kthread");
+	if (IS_ERR(boost_kthread)) {
+		pr_err("icfboost: error creating worker thread\n");
+		return PTR_ERR(boost_kthread);
+	}
+
+	sched_setscheduler(boost_kthread, SCHED_RR, &sparm);
+
 	ret = input_register_handler(&cfb_input_handler);
 	if (ret) {
-		destroy_workqueue(cfb_wq);
+		pr_err("icfboost: unable to register input device\n");
+		kthread_stop(boost_kthread);
 		return ret;
 	}
-	pm_qos_add_request(&core_req, PM_QOS_CPU_FREQ_MIN,
+
+	pm_qos_add_request(&core_req, PM_QOS_MIN_ONLINE_CPUS,
 			   PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&freq_req, PM_QOS_CPU_FREQ_MIN,
 			   PM_QOS_DEFAULT_VALUE);
+
 	return 0;
 }
 
@@ -224,11 +213,7 @@ static void __exit cfboost_exit(void)
 {
 	/* stop input events */
 	input_unregister_handler(&cfb_input_handler);
-	/* cancel pending work requests */
-	cancel_work_sync(&boost);
-	cancel_delayed_work_sync(&unboost);
-	/* clean up */
-	destroy_workqueue(cfb_wq);
+	kthread_stop(boost_kthread);
 	pm_qos_remove_request(&freq_req);
 	pm_qos_remove_request(&core_req);
 }
