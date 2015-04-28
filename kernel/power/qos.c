@@ -102,46 +102,58 @@ static struct pm_qos_object network_throughput_pm_qos = {
 
 
 static BLOCKING_NOTIFIER_HEAD(min_online_cpus_notifier);
-static struct pm_qos_object min_online_cpus_pm_qos = {
-	.requests = PLIST_HEAD_INIT(min_online_cpus_pm_qos.requests),
-	.notifiers = &min_online_cpus_notifier,
-	.name = "min_online_cpus",
+static struct pm_qos_constraints min_online_cpus_constraints = {
+	.list = PLIST_HEAD_INIT(min_online_cpus_constraints.list),
 	.target_value = PM_QOS_MIN_ONLINE_CPUS_DEFAULT_VALUE,
 	.default_value = PM_QOS_MIN_ONLINE_CPUS_DEFAULT_VALUE,
 	.type = PM_QOS_MAX,
+	.notifiers = &min_online_cpus_notifier,
+};
+static struct pm_qos_object min_online_cpus_pm_qos = {
+	.constraints = &min_online_cpus_constraints,
+	.name = "min_online_cpus",
 };
 
 
 static BLOCKING_NOTIFIER_HEAD(max_online_cpus_notifier);
-static struct pm_qos_object max_online_cpus_pm_qos = {
-	.requests = PLIST_HEAD_INIT(max_online_cpus_pm_qos.requests),
-	.notifiers = &max_online_cpus_notifier,
-	.name = "max_online_cpus",
+static struct pm_qos_constraints max_online_cpus_constraints = {
+	.list = PLIST_HEAD_INIT(max_online_cpus_constraints.list),
 	.target_value = PM_QOS_MAX_ONLINE_CPUS_DEFAULT_VALUE,
 	.default_value = PM_QOS_MAX_ONLINE_CPUS_DEFAULT_VALUE,
 	.type = PM_QOS_MIN,
+	.notifiers = &max_online_cpus_notifier,
+};
+static struct pm_qos_object max_online_cpus_pm_qos = {
+	.constraints = &max_online_cpus_constraints,
+	.name = "max_online_cpus",
+
 };
 
-
 static BLOCKING_NOTIFIER_HEAD(cpu_freq_min_notifier);
-static struct pm_qos_object cpu_freq_min_pm_qos = {
-	.requests = PLIST_HEAD_INIT(cpu_freq_min_pm_qos.requests),
-	.notifiers = &cpu_freq_min_notifier,
-	.name = "cpu_freq_min",
+static struct pm_qos_constraints cpu_freq_min_constraints = {
+	.list = PLIST_HEAD_INIT(cpu_freq_min_constraints.list),
 	.target_value = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE,
 	.default_value = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE,
 	.type = PM_QOS_MAX,
+	.notifiers = &cpu_freq_min_notifier,
+};
+static struct pm_qos_object cpu_freq_min_pm_qos = {
+	.constraints = &cpu_freq_min_constraints,
+	.name = "cpu_freq_min",
 };
 
 
 static BLOCKING_NOTIFIER_HEAD(cpu_freq_max_notifier);
-static struct pm_qos_object cpu_freq_max_pm_qos = {
-	.requests = PLIST_HEAD_INIT(cpu_freq_max_pm_qos.requests),
-	.notifiers = &cpu_freq_max_notifier,
-	.name = "cpu_freq_max",
+static struct pm_qos_constraints cpu_freq_max_constraints = {
+	.list = PLIST_HEAD_INIT(cpu_freq_max_constraints.list),
 	.target_value = PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE,
 	.default_value = PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE,
 	.type = PM_QOS_MIN,
+	.notifiers = &cpu_freq_max_notifier,
+};
+static struct pm_qos_object cpu_freq_max_pm_qos = {
+	.constraints = &cpu_freq_max_constraints,
+	.name = "cpu_freq_max",
 };
 
 
