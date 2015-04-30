@@ -1038,6 +1038,9 @@ no_policy:
 	return ret;
 }
 
+static struct pm_qos_request core_req, cpu_freq_min_req,
+		     cpu_freq_max_req;
+
 static ssize_t store(struct kobject *kobj, struct attribute *attr,
 		     const char *buf, size_t count)
 {
@@ -1045,6 +1048,11 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
 	struct cpufreq_policy *policy;
 	struct freq_attr *fattr = to_attr(attr);
 	ssize_t ret = -EINVAL;
+
+#ifdef CONFIG_TEGRA_AUTO_HOTPLUG
+	pm_qos_update_request_timeout(&core_req, 4, 1000000);
+	mdelay(50);
+#endif
 
 	freqobj = to_cpu_kobj(kobj);
 	if (!freqobj->cpu_policy)
@@ -2529,10 +2537,6 @@ static int cpu_freq_notify(struct notifier_block *b,
 	return NOTIFY_OK;
 }
 
-//                                                                                     
-static struct pm_qos_request cpu_freq_min_req;
-static struct pm_qos_request cpu_freq_max_req;
-
 int cpufreq_set_min_freq(void *data, s32 val)
 {
 	pm_qos_update_request(&cpu_freq_min_req, val);
@@ -2544,7 +2548,6 @@ int cpufreq_set_max_freq(void *data, s32 val)
 	pm_qos_update_request(&cpu_freq_max_req, val);
 	return 0;
 }
-//                                                                                     
 
 static int __init cpufreq_core_init(void)
 {
@@ -2565,14 +2568,16 @@ static int __init cpufreq_core_init(void)
 	rc = pm_qos_add_notifier(PM_QOS_CPU_FREQ_MAX,
 				 &max_freq_notifier);
 	BUG_ON(rc);
-#ifdef CONFIG_MACH_X3
-//                                                                                     
+
 	pm_qos_add_request(&cpu_freq_min_req, PM_QOS_CPU_FREQ_MIN,
 			   PM_QOS_DEFAULT_VALUE);
 	pm_qos_add_request(&cpu_freq_max_req, PM_QOS_CPU_FREQ_MAX,
 			   PM_QOS_DEFAULT_VALUE);
-//                                                                                     
+#ifdef CONFIG_TEGRA_AUTO_HOTPLUG
+	pm_qos_add_request(&core_req, PM_QOS_MIN_ONLINE_CPUS,
+			   PM_QOS_DEFAULT_VALUE);
 #endif
+
 	return 0;
 }
 core_initcall(cpufreq_core_init);
