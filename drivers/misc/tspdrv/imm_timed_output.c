@@ -5,18 +5,18 @@
 #include<linux/sched.h>
 #include<linux/types.h>
 #include"imm_timed_output.h"
-#define max_timeout_ms 15000
+#define max_timeout_ms 10000
 
 static struct hrtimer vib_timer;
 static atomic_t vib_state = ATOMIC_INIT(0);
 static struct work_struct vibrator_work;
 extern int32_t ImmVibeSPI_ForceOut_AmpEnable(u_int8_t);
 extern int32_t ImmVibeSPI_ForceOut_AmpDisable(u_int8_t);
-extern int32_t ImmVibeSPI_SetTimedSample();
+extern int32_t ImmVibeSPI_SetTimedSample(void);
 
 static void ImmVibeSPI_Control(struct work_struct *work)
 {
-	if(atomic_read(&vib_state)) {
+	if (atomic_read(&vib_state)) {
 		ImmVibeSPI_ForceOut_AmpEnable(0);
 		ImmVibeSPI_SetTimedSample();
 	}
@@ -30,30 +30,27 @@ static void tspdrv_vib_enable(struct timed_output_dev *dev, int value)
 	
 	hrtimer_cancel(&vib_timer);
 
-	if(value == 0) {
-		atomic_set(&vib_state, 0); //Turn Off the vibrator
-		schedule_work(&vibrator_work);
- 	}
-	else {
-		value = (value > max_timeout_ms ? max_timeout_ms : value);
+	if ((value >= 1) && (value <= max_timeout_ms)) {
         /*[LGE_BSP_START][yunmo.yang@lge.com] Unlimit Vibrator Bug fix*/
-		if(value < 10)
-            value = 10;
+		if (value <= 10)
+			value = 10;
         /*[LGE_BSP_END][yunmo.yang@lge.com] Unlimit Vibrator Bug fix*/
-
 		atomic_set(&vib_state, 1);
 		schedule_work(&vibrator_work);
 
 		hrtimer_start(&vib_timer,
 			ktime_set(value/ 1000, (value % 1000) * 1000000),
 			HRTIMER_MODE_REL);
+	} else {
+		atomic_set(&vib_state, 0); //Turn Off the vibrator
+		schedule_work(&vibrator_work);
 	}
 
 }
 
 static int tspdrv_vib_get_time(struct timed_output_dev *dev)
 {
-	if(hrtimer_active(&vib_timer)) {
+	if (hrtimer_active(&vib_timer)) {
 		ktime_t r = hrtimer_get_remaining(&vib_timer);
 		struct timeval t = ktime_to_timeval(r);
 		return t.tv_sec * 1000 + t.tv_sec / 1000;
