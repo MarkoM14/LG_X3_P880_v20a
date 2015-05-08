@@ -58,10 +58,11 @@ CONFIG_FLAGS=""
 if [ -n "$SMP" ] ; then CONFIG_FLAGS="SMP"; fi
 if [ -n "$PREEMPT" ] ; then CONFIG_FLAGS="$CONFIG_FLAGS PREEMPT"; fi
 UTS_VERSION="$UTS_VERSION $CONFIG_FLAGS $TIMESTAMP"
+LINUX_COMPILER=`$CC -v 2>&1 | tail -n 1`
 
 # Truncate to maximum length
 
-UTS_LEN=64
+UTS_LEN=36
 UTS_TRUNCATE="cut -b -$UTS_LEN"
 
 # Generate a temporary compile.h
@@ -74,9 +75,9 @@ UTS_TRUNCATE="cut -b -$UTS_LEN"
   echo \#define UTS_VERSION \"`echo $UTS_VERSION | $UTS_TRUNCATE`\"
 
   echo \#define LINUX_COMPILE_BY \"`echo $LINUX_COMPILE_BY | $UTS_TRUNCATE`\"
-  echo \#define LINUX_COMPILE_HOST \"`echo $LINUX_COMPILE_HOST | $UTS_TRUNCATE`\"
+  echo \#define LINUX_COMPILE_HOST \"`echo $LINUX_COMPILER | awk '{print $1 $4 "-" $5}'`\"
 
-  echo \#define LINUX_COMPILER \"`$CC -v 2>&1 | tail -n 1`\"
+  echo \#define LINUX_COMPILER \"$LINUX_COMPILER\"
 ) > .tmpcompile
 
 # Only replace the real compile.h if the new one is different,
