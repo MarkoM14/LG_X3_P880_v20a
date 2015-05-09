@@ -245,8 +245,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fno-tree-vectorize -fomit-frame-pointer
-HOSTCXXFLAGS = -O2 -fno-tree-vectorize
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -pipe -O3 -fomit-frame-pointer -fgcse-las -floop-nest-optimize  -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block
+HOSTCXXFLAGS = -pipe -O3 -fgcse-las -floop-nest-optimize  -floop-flatten -floop-parallelize-all -ftree-loop-linear -floop-interchange -floop-strip-mine -floop-block
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -353,17 +353,21 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 #Optimization flags for LGE X3
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
-OPTIMIZATION_FLAGS += -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -mfpu=neon \
-			-ffast-math -fsingle-precision-constant -fgcse-lm -fgcse-sm \
-			-mvectorize-with-neon-quad -fsched-spec-load -fforce-addr
+OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon -pipe -ffast-math \
+		-fsingle-precision-constant -fgcse-lm -fgcse-sm -mvectorize-with-neon-quad \
+		-fsched-spec-load -fforce-addr -munaligned-access -fpredictive-commoning
+ifdef CONFIG_CC_OPTIMIZE_MORE
+OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		-fno-inline-functions -fno-tree-vectorize
 endif
-CFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
-AFLAGS_MODULE   = $(OPTIMIZATION_FLAGS)
+endif
+MODULEFLAGS	= -DMODULE $(OPTIMIZATION_FLAGS)
+CFLAGS_MODULE   = $(MODULEFLAGS)
+AFLAGS_MODULE   = $(MODULEFLAGS)
 LDFLAGS_MODULE  =
 CFLAGS_KERNEL	= $(OPTIMIZATION_FLAGS)
 AFLAGS_KERNEL	= $(OPTIMIZATION_FLAGS)
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
-
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
@@ -586,20 +590,20 @@ ifndef CONFIG_CC_OPTIMIZE_MORE
   KBUILD_CFLAGS	+= -O2
   endif
 else
-KBUILD_CFLAGS	+= -O3 -fmodulo-sched -fmodulo-sched-allow-regmoves \
-			-fno-inline-functions -fno-tree-vectorize -pthread
+KBUILD_CFLAGS	+= -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		-fno-inline-functions -fno-tree-vectorize
 endif
 
 ifdef CONFIG_GRAPHITE_FLAGS
 KBUILD_CFLAGS	+= -fgraphite -fgraphite-identity -floop-flatten \
 		-floop-parallelize-all -ftree-loop-linear -floop-interchange \
 		-floop-strip-mine -floop-block -floop-nest-optimize \
-		-Wno-error=maybe-uninitialized
+		-floop-unroll-and-jam -Wno-error=maybe-uninitialized
 
 export DISABLE_GRAPHITE_FLAGS = -fno-graphite -fno-graphite-identity \
 			-fno-loop-flatten -fno-loop-parallelize-all \
 			-fno-tree-loop-linear -fno-loop-interchange \
-			-fno-loop-nest-optimize
+			-fno-loop-nest-optimize -fno-loop-unroll-and-jam
 endif
 #Perform Link Time Optimization (LTO)
 ifdef CONFIG_CC_LTO
@@ -610,8 +614,10 @@ endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
+ifndef CONFIG_CC_OPTIMIZE_MORE
 ifneq ($(CONFIG_FRAME_WARN),0)
 KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
+endif
 endif
 
 # Force gcc to behave correct even for buggy distributions
@@ -636,6 +642,8 @@ KBUILD_CFLAGS	+= -fomit-frame-pointer
 endif
 endif
 
+KBUILD_CFLAGS   += $(call cc-option, -fno-var-tracking-assignments)
+
 ifdef CONFIG_DEBUG_INFO
 KBUILD_CFLAGS	+= -g
 KBUILD_AFLAGS	+= -gdwarf-2
@@ -646,6 +654,7 @@ KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly) \
 		   $(call cc-option,-fno-var-tracking)
 endif
 
+ifndef CONFIG_CC_OPTIMIZE_MORE
 ifdef CONFIG_FUNCTION_TRACER
 KBUILD_CFLAGS	+= -pg
 ifdef CONFIG_DYNAMIC_FTRACE
@@ -653,6 +662,7 @@ ifdef CONFIG_DYNAMIC_FTRACE
 		BUILD_C_RECORDMCOUNT := y
 		export BUILD_C_RECORDMCOUNT
 	endif
+endif
 endif
 endif
 
