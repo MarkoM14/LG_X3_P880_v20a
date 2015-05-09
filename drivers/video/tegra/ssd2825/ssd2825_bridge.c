@@ -17,6 +17,14 @@
 #include <mach/dc.h>
 #include <mach/fb.h>
 #include "ssd2825_bridge.h"
+
+//#define DEBUG
+#ifdef DEBUG
+#define DEBUG_MSG(stuff...)	pr_info(stuff)
+#else
+#define DEBUG_MSG(stuff...)	do {} while (0)
+#endif
+
 //                                                                                             
 #if defined(CONFIG_MACH_VU10)
 #include "solomon_spi_table_vu10.h"
@@ -283,14 +291,14 @@ static void reg_check(struct work_struct *work)
 {
 	u16 readdata1,readdata2;
 	u8 data1,data2;
-	//printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
+	DEBUG_MSG(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 	if(!ssd2825_shutdown){
 	if(x3_bridge_on && ssd2825_disable_end && !ssd2825_HM_mode){
 		readdata1=ssd2825_bridge_spi_read2(0xB7);
 		readdata2=ssd2825_bridge_lcd_reg_read_esd();
 		data1=(u8)(readdata1&0x00FF);
 		data2=(u8)(readdata2&0x00FF);
-		//printk(KERN_INFO "register check 0xB7:0x%x , 0x0A:0x%x \n", data1, data2);
+		DEBUG_MSG(KERN_INFO "register check 0xB7:0x%x , 0x0A:0x%x \n", data1, data2);
 		if ((lm3533_is_ready() && (!((data1==0xC9)||(data1==0x49)||(data1==0x9)))) || (data2 != 0x1C))
 		{
 			printk(KERN_INFO "[ssd2825]register check 0xB7:0x%x , 0x0A:0x%x \n", data1, data2);
@@ -390,7 +398,7 @@ static int ssd2825_bridge_HitachiLcd_spi_read(int cmd)
 			sequence5++;
 		}
 	}
-//	printk("solomon_reg_read_set9 write success \n");
+	DEBUG_MSG("solomon_reg_read_set9 write success \n");
 
 	for ( cnt = 0 ; cnt < read_cnt ; cnt++ )
 	{
@@ -513,7 +521,7 @@ int ssd2825_bridge_enable(void)
 	int cnt, ret;
 	spi_data *sequence;
 	int total_cnt =0;
-	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
+	DEBUG_MSG(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 	mutex_lock(&bridge_init_mutex);
 	 if(!x3_bridge_on){
 		ssd2825_bridge_enable_spi_pins_to_nomal();
@@ -569,14 +577,14 @@ int ssd2825_bridge_enable(void)
 		}
 		ret=lm353x_bl_on();
 		if(ret==2){
-			printk(KERN_INFO "lm353x_bl_on success *** state: 0 -> 1 \n");
+			DEBUG_MSG(KERN_INFO "lm353x_bl_on success *** state: 0 -> 1 \n");
 		}
 
 		//mdelay(10);
 		x3_bridge_on = TRUE;
 	}
 	mutex_unlock(&bridge_init_mutex);
-	printk(KERN_INFO "%s ended \n", __func__);
+	DEBUG_MSG(KERN_INFO "%s ended \n", __func__);
 	return 0;
 }
 
@@ -585,11 +593,11 @@ int ssd2825_bridge_disable(void)
 	int cnt, ret;
 	int total_cnt=0;
 	spi_data  *sequence;
-	printk(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
+	DEBUG_MSG(KERN_INFO "%s ***** x3_bridge_on : %d \n", __func__, x3_bridge_on);
 	mutex_lock(&bridge_init_mutex);
 	if(x3_bridge_on) {
 		ret=lm353x_bl_off();
-		printk(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
+		DEBUG_MSG(KERN_INFO "lm353x_bl_off success *** state: %d -> 0 \n", ret);
 #if defined(CONFIG_SPI_SOLOMON_BRIDGE)
 		total_cnt = SEQUENCE_SIZE(solomon_power_off_set);
 		sequence = solomon_power_off_set;
@@ -646,7 +654,7 @@ int ssd2825_bridge_disable(void)
 		ssd2825_disable_end = TRUE;
 	}
 	mutex_unlock(&bridge_init_mutex);
-	printk(KERN_INFO "%s ended \n", __func__);
+	DEBUG_MSG(KERN_INFO "%s ended \n", __func__);
 	return 0;
 }
 
@@ -656,7 +664,7 @@ static ssize_t ssd2825_bridge_show_device_id(struct device *dev,
 {
 	int r;
 	printk("%s \n",__func__);
-	//printk("%s *** device_id : 0x%x \n",__func__,device_id);
+	DEBUG_MSG("%s *** device_id : 0x%x \n",__func__,device_id);
 	ssd2825_bridge_spi_read();
 	r = snprintf(buf, PAGE_SIZE,
 			"ssd2825 bridge device_id : 0x%x \n",
@@ -825,7 +833,7 @@ static ssize_t ssd2825_bridge_reg_read2(struct device *dev, struct device_attrib
 	sscanf(buf, "%d", &cmd);
 
 	/* SSD2825 Bridge IC normal register SPI read*/
-	//printk("SSD2825 Bridge IC normal register SPI read *** cmd 0x%x \n",cmd);
+	DEBUG_MSG("SSD2825 Bridge IC normal register SPI read *** cmd 0x%x \n",cmd);
 	ssd2825_bridge_spi_read2(cmd);
 
 	return count;
@@ -982,7 +990,7 @@ void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 {
 /*                                 *//*2012/01/19*/
 	ssd2825_disable_end = FALSE;
-	printk(KERN_INFO "%s start \n", __func__);
+	DEBUG_MSG(KERN_INFO "%s start \n", __func__);
 #ifdef CONFIG_ESD_REG_CHECK
 	cancel_delayed_work_sync(&work_instance->work_reg_check);
 #endif
@@ -993,7 +1001,7 @@ void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 		cmdlineRGBvalue.table_type=GAMMA_NV_SAVED;
 	else if(cmdlineRGBvalue.table_type==GAMMA_NV_SEND)
 		cmdlineRGBvalue.table_type=GAMMA_NV_RETURNED;
-	printk(KERN_INFO "%s end \n", __func__);
+	DEBUG_MSG(KERN_INFO "%s end \n", __func__);
 	//return 0;
 }
 
@@ -1012,11 +1020,11 @@ void ssd2825_bridge_spi_shutdown(struct spi_device *spi)
 
 void ssd2825_bridge_spi_resume(struct early_suspend * h)
 {
-	printk(KERN_INFO "%s start \n", __func__);
+	DEBUG_MSG(KERN_INFO "%s start \n", __func__);
 #ifdef CONFIG_ESD_REG_CHECK
 	schedule_delayed_work(&work_instance->work_reg_check, msecs_to_jiffies(100));
 #endif
-	printk(KERN_INFO "%s end \n", __func__);
+	DEBUG_MSG(KERN_INFO "%s end \n", __func__);
 }
 
 static int ssd2825_bridge_reboot_notify(struct notifier_block *nb,
@@ -1063,7 +1071,7 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 	/* request platform data */
 	spi->bits_per_word = pdata->bits_per_word;
 
-	/*printk(" bridge spi driver : pdata->bits_per_word --> %d \n",pdata->bits_per_word);*/
+	DEBUG_MSG(" bridge spi driver : pdata->bits_per_word --> %d \n",pdata->bits_per_word);
 	spi->mode = pdata->mode;
 	spi->max_speed_hz = pdata->max_speed_hz;
 

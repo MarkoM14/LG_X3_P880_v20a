@@ -38,6 +38,7 @@
 #include <mach/hardware.h>
 #include <linux/pwm_backlight.h>
 #include <linux/cpufreq.h>
+#include <linux/pm_qos.h>
 
 #include <mach-tegra/board.h>
 #include <lge/board-x3.h>
@@ -165,9 +166,12 @@ static struct platform_device x3_backlight_device = {
 	},
 };
 
+static struct pm_qos_request core_req;
 static bool first_disp_boot = true;
 static int x3_panel_enable(struct device *dev)
 {
+	unsigned int max_cpus = pm_qos_request(PM_QOS_MAX_ONLINE_CPUS) ? : 4;
+
 	if(!x3_hddisplay_on){
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
 		//printk("system_state:%d, first_disp_boot:%d \n",system_state,first_disp_boot);
@@ -178,8 +182,10 @@ static int x3_panel_enable(struct device *dev)
 			 * this is needed to be called in
 			 * late resume right after early suspend
 			 */
-			printk("x3_hddisplay_on: Set max freq to boost display on\n");
+			printk("x3_hddisplay_on: Set max freq and cores to boost display on\n");
 			cpufreq_set_max_freq(NULL, LONG_MAX);
+			pm_qos_update_request_timeout(&core_req, max_cpus, 2000000);
+
 			ssd2825_bridge_enable();
 			x3_hddisplay_on = true;
 			return 0;
@@ -190,7 +196,7 @@ static int x3_panel_enable(struct device *dev)
 #endif
 	x3_hddisplay_on = true;
 	}
-	printk("x3_hddisplay_on: %d \n",x3_hddisplay_on);
+//	printk("x3_hddisplay_on: %d \n",x3_hddisplay_on);
 	return 0;
 }
 
@@ -200,7 +206,7 @@ static int x3_panel_disable(void)
 		//ssd2825_bridge_disable();
 		x3_hddisplay_on = false;
 	}
-	printk("x3_hddisplay_on: %d \n",x3_hddisplay_on);
+//	printk("x3_hddisplay_on: %d \n",x3_hddisplay_on);
 	return 0;
 }
 
@@ -531,7 +537,7 @@ static struct tegra_dc_platform_data x3_disp2_pdata = {
 
 static void ssd2825_bridge_enable_worker(struct work_struct *work)
 {
-	printk("ssd2825_bridge_enable_worker: prepoweron\n");
+//	printk("ssd2825_bridge_enable_worker: prepoweron\n");
 	ssd2825_bridge_enable();
 };
 
@@ -656,7 +662,7 @@ static int rgb_bridge_gpios[] = { };
 static void x3_panel_early_suspend(struct early_suspend *h)
 {
 	unsigned i;
-	printk("%s \n", __func__);
+//	printk("%s \n", __func__);
 	for (i = 0; i < num_registered_fb; i++){
 		if(1 != i)//                                                                                          
 			fb_blank(registered_fb[i], FB_BLANK_POWERDOWN);
@@ -700,7 +706,7 @@ static void x3_panel_late_resume(struct early_suspend *h)
 		if(1 != i) // hdmi id is 1
 			fb_blank(registered_fb[i], FB_BLANK_UNBLANK);
 	}
-	printk("%s ended \n", __func__);
+//	printk("%s ended \n", __func__);
 }
 #endif
 
@@ -814,6 +820,9 @@ int __init x3_panel_init(void)
 #endif
 	bridge_work_queue =
 		create_singlethread_workqueue("bridge_spi_transaction");
+
+	pm_qos_add_request(&core_req, PM_QOS_MIN_ONLINE_CPUS,
+			   PM_QOS_DEFAULT_VALUE);
 
 	return err;
 }
