@@ -878,8 +878,7 @@ static int __init tegra_cpufreq_init(void)
 		return ret;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	tegra_cpufreq_early_suspender.suspend = tegra_cpufreq_early_suspend;
-	tegra_cpufreq_early_suspender.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
-//TO TEST, faster resume	tegra_cpufreq_early_suspender.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
+	tegra_cpufreq_early_suspender.level = EARLY_SUSPEND_LEVEL_DISABLE_FB; //EARLY_SUSPEND_LEVEL_BLANK_SCREEN;
 	register_early_suspend(&tegra_cpufreq_early_suspender);
 #endif
 
