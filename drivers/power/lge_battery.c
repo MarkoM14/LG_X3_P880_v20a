@@ -23,7 +23,7 @@
 #include <linux/slab.h>
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
-#include <linux/android_alarm.h>
+#include <linux/alarmtimer.h>
 #include <linux/syscalls.h>
 #include <linux/fcntl.h>
 #include <asm/uaccess.h>
