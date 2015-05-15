@@ -107,7 +107,7 @@ VibeUInt32 g_nPWM_Freq = PWM_PERIOD_DEFAULT;
 VibeUInt32 g_nLDO_Voltage = LDO_VOLTAGE_DEFAULT;
 
 
-static VibeStatus SYS_API__I2C__Write(_addr, _data)
+static VibeStatus SYS_API__I2C__Write(int _addr, int _data)
 {
 	return tspdrv_i2c_write_byte_data(_addr, _data);
 }

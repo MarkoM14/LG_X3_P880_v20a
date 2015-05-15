@@ -176,6 +176,7 @@ err_pwm:
 
 static int tspdrv_i2c_remove(struct i2c_client *client)
 {
+	return 0;
 }
 
 #ifdef CONFIG_PM

@@ -190,7 +190,7 @@ static DEVICE_ATTR(nforce_timed, S_IRUGO | S_IWUSR, nforce_val_show, nforce_val_
 
 int __init tspdrv_init( void )
 {
-    int nRet, i;   /* initialized below */
+    int ret, nRet, i;   /* initialized below */
 
     DbgOut((KERN_INFO "tspdrv: init_module. enter\n"));
 
@@ -244,7 +244,9 @@ int __init tspdrv_init( void )
     }
     DbgOut((KERN_INFO "tspdrv: init_module exit.\n"));
 
-    device_create_file(&platdev.dev, &dev_attr_nforce_timed);
+    ret = device_create_file(&platdev.dev, &dev_attr_nforce_timed);
+    if (ret < 0)
+        return 0;
     ImmVibe_timed_output();
     return 0;
 }
