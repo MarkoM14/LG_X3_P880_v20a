@@ -44,7 +44,7 @@ MODULE_LICENSE("GPL v2");
 
 
 static struct pm_qos_request freq_req, core_req;
-static unsigned int boost_freq = 760000; /* kHz */
+static unsigned int boost_freq; /* kHz */
 static int boost_freq_set(const char *arg, const struct kernel_param *kp)
 {
 	unsigned int old_boost = boost_freq;
