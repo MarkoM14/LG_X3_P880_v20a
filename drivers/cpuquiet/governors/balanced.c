@@ -57,7 +57,7 @@ static struct timer_list load_timer;
 static bool load_timer_active;
 
 /* configurable parameters */
-static unsigned int  balance_level = 72;	//70
+static unsigned int  balance_level = 75;	//70
 static unsigned int  idle_bottom_freq;
 static unsigned int  idle_top_freq;
 static unsigned long up_delay;
@@ -183,13 +183,13 @@ static unsigned int rt_profile_default[] = {
 static unsigned int rt_profile_1[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
 //	8,  9, 10, UINT_MAX
-	12, 15, 20, UINT_MAX
+	11, 14, 18, UINT_MAX
 };
 
 static unsigned int rt_profile_2[] = {
 /*      1,  2,  3,  4 - on-line cpus target */
 //	5,  13, 14, UINT_MAX
-	12, 20, 26, UINT_MAX
+	11, 18, 24, UINT_MAX
 };
 
 static unsigned int rt_profile_disable[] = {
@@ -510,8 +510,8 @@ static int balanced_start(void)
 
 	INIT_DELAYED_WORK(&balanced_work, balanced_work_func);
 
-	up_delay = msecs_to_jiffies(140);	//100
-	down_delay = msecs_to_jiffies(900);	//2000
+	up_delay = msecs_to_jiffies(130);	//100
+	down_delay = msecs_to_jiffies(1000);	//2000
 
 	table = cpufreq_frequency_get_table(0);
 	if (!table)
