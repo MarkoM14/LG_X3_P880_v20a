@@ -69,6 +69,7 @@ static unsigned long boost_cpus;
 module_param(boost_cpus, ulong, 0644);
 
 static unsigned long last_boost_jiffies;
+static unsigned int start_delay = 0;
 
 static void cfb_boost(struct kthread_work *w)
 {
@@ -88,10 +89,19 @@ static DEFINE_KTHREAD_WORK(boost_work, &cfb_boost);
 static void cfb_input_event(struct input_handle *handle, unsigned int type,
 			    unsigned int code, int value)
 {
-	if (jiffies < last_boost_jiffies ||
-		jiffies > last_boost_jiffies + msecs_to_jiffies(boost_time/2)) {
-		queue_kthread_work(&boost_worker, &boost_work);
-		last_boost_jiffies = jiffies;
+	if (boost_cpus > 0 || boost_freq > 0) {
+		if (jiffies < last_boost_jiffies ||
+			jiffies > last_boost_jiffies + msecs_to_jiffies(boost_time/2)) {
+			//Block it for 15 events on boot.Android min cpu setting is affected
+			if (start_delay <= 15) {
+				start_delay++;
+				pr_info("icfboost:Blocking boost event %d of 15\n", start_delay);
+				last_boost_jiffies = jiffies;
+				return;
+			}
+			queue_kthread_work(&boost_worker, &boost_work);
+			last_boost_jiffies = jiffies;
+		}
 	}
 }
 
