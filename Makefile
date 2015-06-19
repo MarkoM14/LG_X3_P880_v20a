@@ -353,11 +353,12 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 #Optimization flags for LGE X3
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
-OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon -pipe -ffast-math \
-		-fsingle-precision-constant -fgcse-lm -fgcse-sm -mvectorize-with-neon-quad \
-		-fsched-spec-load -fforce-addr -munaligned-access -fpredictive-commoning
+OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
+		 -mvectorize-with-neon-quad
 ifdef CONFIG_CC_OPTIMIZE_MORE
-OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-inline-functions
+OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
+		-ffast-math -funsafe-loop-optimizations -fpredictive-commoning
 endif
 endif
 MODULEFLAGS	= -DMODULE $(OPTIMIZATION_FLAGS)
@@ -583,6 +584,10 @@ endif # $(dot-config)
 # Defaults to vmlinux, but the arch makefile usually adds further targets
 all: vmlinux
 
+ifdef CONFIG_MACH_X3
+KBUILD_CFLAGS	+= -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
+		-mvectorize-with-neon-quad
+endif
 ifndef CONFIG_CC_OPTIMIZE_MORE
   ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
   KBUILD_CFLAGS	+= -Os
@@ -590,19 +595,22 @@ ifndef CONFIG_CC_OPTIMIZE_MORE
   KBUILD_CFLAGS	+= -O2
   endif
 else
-KBUILD_CFLAGS	+= -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves -fno-inline-functions
+KBUILD_CFLAGS	+= -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
+		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
+		-ffast-math -funsafe-loop-optimizations -fpredictive-commoning
+LDFLAGS 	+= -O3 --sort-common
 endif
 
 ifdef CONFIG_GRAPHITE_FLAGS
 KBUILD_CFLAGS	+= -fgraphite -fgraphite-identity -floop-flatten \
 		-floop-parallelize-all -ftree-loop-linear -floop-interchange \
 		-floop-strip-mine -floop-block -floop-nest-optimize \
-		-floop-unroll-and-jam -Wno-error=maybe-uninitialized
+		-floop-unroll-and-jam
 
-export DISABLE_GRAPHITE_FLAGS = -fno-graphite -fno-graphite-identity \
-			-fno-loop-flatten -fno-loop-parallelize-all \
-			-fno-tree-loop-linear -fno-loop-interchange \
-			-fno-loop-nest-optimize -fno-loop-unroll-and-jam
+export DISABLE_GRAPHITE_FLAGS = -fno-graphite -fno-graphite-identity  -fno-loop-flatten \
+		-fno-loop-parallelize-all -fno-tree-loop-linear -fno-loop-interchange \
+		-fno-loop-strip-mine -fno-loop-block -fno-loop-nest-optimize \
+		-fno-loop-unroll-and-jam
 endif
 #Perform Link Time Optimization (LTO)
 ifdef CONFIG_CC_LTO
