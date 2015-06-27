@@ -245,8 +245,15 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O2
+#HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
+#HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -std=gnu89 -pipe -O3 \
+	-fomit-frame-pointer -fgcse-las -floop-nest-optimize -floop-flatten \
+	-floop-parallelize-all -ftree-loop-linear -floop-interchange \
+	-floop-strip-mine -floop-block -fno-tree-vectorize
+HOSTCXXFLAGS = -pipe -O3 -fgcse-las -floop-nest-optimize -floop-flatten \
+	-floop-parallelize-all -ftree-loop-linear -floop-interchange \
+	-floop-strip-mine -floop-block -fno-tree-vectorize
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -354,11 +361,14 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
 OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad
+		 -mvectorize-with-neon-quad -pipe -ffast-math
 ifdef CONFIG_CC_OPTIMIZE_MORE
 OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
-		-ffast-math -funsafe-loop-optimizations -fpredictive-commoning
+		-funsafe-loop-optimizations -fivopts -ftree-loop-im -ftree-loop-ivcanon \
+		-funswitch-loops -frename-registers -ftracer -fipa-pta -fforce-addr \
+		-fsched-spec-load -fweb -munaligned-access -fpredictive-commoning \
+		-fsingle-precision-constant -fno-tree-vectorize
 endif
 endif
 MODULEFLAGS	= -DMODULE $(OPTIMIZATION_FLAGS)
@@ -586,7 +596,7 @@ all: vmlinux
 
 ifdef CONFIG_MACH_X3
 KBUILD_CFLAGS	+= -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		-mvectorize-with-neon-quad
+		 -mvectorize-with-neon-quad -pipe -ffast-math
 endif
 ifndef CONFIG_CC_OPTIMIZE_MORE
   ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
@@ -597,7 +607,10 @@ ifndef CONFIG_CC_OPTIMIZE_MORE
 else
 KBUILD_CFLAGS	+= -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
-		-ffast-math -funsafe-loop-optimizations -fpredictive-commoning
+		-funsafe-loop-optimizations -fivopts -ftree-loop-im -ftree-loop-ivcanon \
+		-funswitch-loops -frename-registers -ftracer -fipa-pta -fforce-addr \
+		-fsched-spec-load -fweb -munaligned-access -fpredictive-commoning \
+		-fsingle-precision-constant -fno-tree-vectorize
 LDFLAGS 	+= -O3 --sort-common
 endif
 
