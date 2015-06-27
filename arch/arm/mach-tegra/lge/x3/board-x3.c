@@ -63,7 +63,6 @@
 #include <mach-tegra/pm.h>
 #include <mach/thermal.h>
 
-//                                                       
 //                         
 #include <lge/board-x3-gps.h>
 //                                                       
@@ -83,7 +82,15 @@ void x3_setup_reboot(void) {}
 #ifdef CONFIG_TEGRA_THERMAL_THROTTLE
 static struct throttle_table throttle_freqs_tj[] = {
 	      /*    CPU,    CBUS,    SCLK,     EMC */
+	      { 1300000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      { 1150000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      { 1150000,  NO_CAP,  NO_CAP,  NO_CAP },
 	      { 1000000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      { 1000000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      { 1000000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      {  910000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      {  910000,  NO_CAP,  NO_CAP,  NO_CAP },
+	      {  760000,  NO_CAP,  NO_CAP,  NO_CAP },
 	      {  760000,  NO_CAP,  NO_CAP,  NO_CAP },
 	      {  760000,  NO_CAP,  NO_CAP,  NO_CAP },
 	      {  620000,  NO_CAP,  NO_CAP,  NO_CAP },
@@ -92,14 +99,11 @@ static struct throttle_table throttle_freqs_tj[] = {
 	      {  620000,  352000,  NO_CAP,  NO_CAP },
 	      {  475000,  352000,  NO_CAP,  NO_CAP },
 	      {  475000,  352000,  NO_CAP,  NO_CAP },
-              {  475000,  352000,  250000,  375000 },
-              {  475000,  352000,  250000,  375000 },
-              {  475000,  247000,  204000,  375000 },
-              {  475000,  247000,  204000,  375000 },
-              {  475000,  247000,  204000,  375000 },
-#if 0 /*                                                               */
-	{ CPU_THROT_LOW,  247000,  204000,  102000 },
-#endif
+	      {  475000,  352000,  250000,  375000 },
+	      {  475000,  352000,  250000,  375000 },
+	      {  475000,  247000,  204000,  375000 },
+	      {  475000,  247000,  204000,  375000 },
+	      {  475000,  247000,  204000,  375000 },
 };
 #endif
 
@@ -115,14 +119,11 @@ static struct throttle_table throttle_freqs_tskin[] = {
 	      {  620000,  352000,  NO_CAP,  NO_CAP },
 	      {  475000,  352000,  NO_CAP,  NO_CAP },
 	      {  475000,  352000,  NO_CAP,  NO_CAP },
-              {  475000,  352000,  250000,  375000 },
-              {  475000,  352000,  250000,  375000 },
-              {  475000,  247000,  204000,  375000 },
-              {  475000,  247000,  204000,  375000 },
-              {  475000,  247000,  204000,  375000 },
-#if 0 /*                                                               */
-	{ CPU_THROT_LOW,  247000,  204000,  102000 },
-#endif
+	      {  475000,  352000,  250000,  375000 },
+	      {  475000,  352000,  250000,  375000 },
+	      {  475000,  247000,  204000,  375000 },
+	      {  475000,  247000,  204000,  375000 },
+	      {  475000,  247000,  204000,  375000 },
 };
 #endif
 
@@ -152,21 +153,19 @@ static struct tegra_thermal_data thermal_data = {
 #endif
 #ifdef CONFIG_TEGRA_EDP_LIMITS
 	.edp_offset = TDIODE_OFFSET,  /* edp based on tdiode */
-	.hysteresis_edp = 3000,
+	.hysteresis_edp = 4000,  //org 3000
 #endif
 #ifdef CONFIG_TEGRA_THERMAL_THROTTLE
-	.temp_throttle = 80000, //default 85000
+	.temp_throttle = 70000,  //default 85000
 	.tc1 = 0,
 	.tc2 = 1,
-	.passive_delay = 2000,
+	.passive_delay = 6000,  //org 2000
 #endif
 #ifdef CONFIG_TEGRA_SKIN_THROTTLE
 	.skin_device_id = THERMAL_DEVICE_ID_SKIN,
 	.temp_throttle_skin = 43000,
 #endif
 };
-
-
 
 static __initdata struct tegra_clk_init_table x3_clk_init_table[] = {
 	/* name		parent		rate		enabled */
@@ -235,6 +234,7 @@ static struct uart_clk_parent uart_parent_clk[] = {
 	[2] = {.name = "pll_m"},
 #endif	
 };
+
 static struct tegra_uart_platform_data x3_uart_pdata;
 static struct tegra_uart_platform_data x3_loopback_uart_pdata;
 static void __init uart_debug_init(void)
@@ -305,9 +305,7 @@ static void __init x3_uart_init(void)
 				ARRAY_SIZE(x3_uart_devices));
 }
 
-
 #if defined(CONFIG_RTC_DRV_TEGRA)	
-
 static struct resource tegra_rtc_resources[] = {
 	[0] = {
 		.start = TEGRA_RTC_BASE,
@@ -334,20 +332,6 @@ static struct platform_device tegra_camera = {
 	.id = -1,
 };
 
-/*
-static struct resource ram_console_resources[] = {
-	{
-		.flags = IORESOURCE_MEM,
-	},
-};
-
-static struct platform_device ram_console_device = {
-	.name 		= "ram_console",
-	.id 		= -1,
-	.num_resources	= ARRAY_SIZE(ram_console_resources),
-	.resource	= ram_console_resources,
-};
-*/
 //                                              
 #if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_MHI_NETDEV)
 struct platform_device mhi_netdevice0 = {
@@ -388,10 +372,6 @@ static struct platform_device tegra_usb_ecm_device = {
 #endif
 
 #ifdef CONFIG_USB_ANDROID_ACM
-/*           
-                                                        
-                                   
- */
 struct acm_platform_data acm_pdata = {
 	.num_inst       = 1,
 };
@@ -406,11 +386,6 @@ struct platform_device acm_device = {
 #endif
 
 #ifdef CONFIG_USB_SUPPORT_LGE_ANDROID_AUTORUN
-/*           
-                                                           
-                                      
-                                   
- */
 struct usb_cdrom_storage_platform_data cdrom_storage_pdata = {
 	.nluns      = 1,
 	.vendor     = USB_MANUFACTURER_NAME,
@@ -432,7 +407,7 @@ static struct lge_battery_platform_data lge_battery_plat = {
 	.gauge_name     = "fuelgauge",
 	.charger_name   = "charger",
 #if (CONFIG_ADC_TSC2007)
-	.adc_name		= "tsc2007_adc",	//                                        
+	.adc_name		= "tsc2007_adc",
 #endif	
 };
 
@@ -456,7 +431,6 @@ struct platform_device lge_mtc_eta_log_device = {
 	.name = "lge_mtc_eta_logger",
 	.id = -1,		
 };
-
 
 static struct platform_device *x3_devices[] __initdata = {
 	&tegra_pmu_device,
@@ -498,7 +472,6 @@ static struct platform_device *x3_devices[] __initdata = {
 	&keypad_led_device, //YJChae
 #endif	
 	&lge_mtc_eta_log_device,
-
 //                                                                              
 #if defined(CONFIG_BD_ADDRESS)
 	&bd_address_device,
@@ -509,11 +482,6 @@ static struct platform_device *x3_devices[] __initdata = {
 #endif /* CONFIG_MHI_NETDEV */
 //                                              
 
-//                                              
-#if defined(CONFIG_MACH_PEGASUS) && defined(CONFIG_TEGRA_BB_MODEM4)
-//	&modem_boot_hsic0,
-#endif
-//                                             
 };
 
 static struct platform_device *x3_audio_devices[] __initdata = {
@@ -522,13 +490,13 @@ static struct platform_device *x3_audio_devices[] __initdata = {
     &tegra_dam_device1,
     &tegra_dam_device2,
     &tegra_i2s_device0,
-    &tegra_i2s_device1,     //                                             
+    &tegra_i2s_device1,
     &tegra_i2s_device2,
     &tegra_i2s_device3,
     &tegra_spdif_device,
     &spdif_dit_device,
-    &bluetooth_dit_device,  //                                             
-    &baseband_dit_device,   //                                             
+    &bluetooth_dit_device,
+    &baseband_dit_device,
     &tegra_pcm_device,
     &x3_audio_device,
 };
@@ -547,7 +515,6 @@ int x3_read_misc(int index, char* buf, int size)
     
     if(buf == NULL) return 0;	
     if(size > MISC_MSG_LENGTH) return 0;
-	
     
     oldfs = get_fs();
     set_fs(KERNEL_DS);
@@ -556,11 +523,11 @@ int x3_read_misc(int index, char* buf, int size)
     if(h_file >= 0)
     {
         offset = MISC_MSG_BASE_OFFSET + (MISC_MSG_LENGTH * index);
-	pr_info("read MISC size = %d, offset = %d\n",size, offset);			
+        pr_info("read MISC size = %d, offset = %d\n",size, offset);			
         sys_lseek( h_file, offset, 0 );
 
         ret = sys_read( h_file, buf, size);
-	pr_info("read MISC ret = %d\n",ret);	
+        pr_info("read MISC ret = %d\n",ret);	
         if( ret != size )
         {
             pr_err("Can't reade MISC partition.\n");
@@ -586,32 +553,30 @@ int x3_write_misc(int index, char* buf, int size)
     int h_file = 0;
     int ret = 0;
     int offset = 0;
-     mm_segment_t oldfs;
-	
+    mm_segment_t oldfs;
+
     if(buf == NULL) return 0;
     if(size > MISC_MSG_LENGTH) return 0;
 
-    
     oldfs = get_fs();
-	
+
     set_fs(KERNEL_DS);
-	
+
     h_file = sys_open(MISC_PARTITION, O_RDWR,0);
 
     if(h_file >= 0)
     {
         offset = MISC_MSG_BASE_OFFSET + (MISC_MSG_LENGTH * index);
-	pr_info("write MISC size = %d, offset = %d\n",size, offset);	
+        pr_info("write MISC size = %d, offset = %d\n",size, offset);	
         sys_lseek( h_file, offset, 0 );
 
         ret = sys_write( h_file, buf, size);
-	pr_info("write MISC ret = %d\n",ret);	
+        pr_info("write MISC ret = %d\n",ret);	
         if( ret != size )
         {
             pr_err("Can't write MISC partition.\n");
             return ret;
         }
-
         sys_close(h_file);
     }
     else
@@ -621,9 +586,9 @@ int x3_write_misc(int index, char* buf, int size)
     }
 
     set_fs(oldfs);
-	
+
     sys_sync();
-	
+
     pr_info("write MISC index = %d, message = %s\n", index, buf);
 
     return ret;
@@ -632,15 +597,15 @@ int x3_write_misc(int index, char* buf, int size)
 int get_misc_msg(misc_msg_type msg, char* misc_msg, int size)
 {
 	int ret = 0;
-    pr_info("start get_misc_msg");
+	pr_info("start get_misc_msg");
 	if(misc_msg == NULL) return ret;
 	if((msg > MISC_MSG_COUNT) || (msg < 0)) return ret;	
 	if((size > MISC_MSG_LENGTH ) || (size == 0 ) ) return ret;
-	
+
 	ret = x3_read_misc(msg, misc_msg, size);
 
 	if(ret == 0 ) return ret;
-	
+
 	return ret;
 }
 
@@ -651,14 +616,13 @@ int set_misc_msg(misc_msg_type msg, char* misc_msg, int size)
 	if(misc_msg == NULL) return ret;
 	if((msg > MISC_MSG_COUNT) || (msg < 0)) return ret;
 	if((size > MISC_MSG_LENGTH ) || (size == 0 ) ) return ret;
-	
+
 	ret = x3_write_misc(msg, misc_msg, size);
 
 	if(ret == 0 ) return ret;
-	
+
 	return ret;
 }
-
 
 hw_rev_pcb_type x3_get_hw_rev_pcb_version(void)
 {
@@ -666,9 +630,9 @@ hw_rev_pcb_type x3_get_hw_rev_pcb_version(void)
 }
 
 static void __init tegra_x3_init(void)
-{	
+{
 	tegra_clk_init_from_table(x3_clk_i2s2_table);
-    	x3_setup_reboot();
+	x3_setup_reboot();
 	tegra_clk_init_from_table(x3_clk_init_table);
 	x3_pinmux_init();
 	x3_uart_init();
@@ -676,7 +640,7 @@ static void __init tegra_x3_init(void)
 	x3_regulator_init();
 	tegra_io_dpd_init();
 	x3_usb_init();
-//                                   
+
 	tegra_thermal_init(&thermal_data, throttle_list, ARRAY_SIZE(throttle_list));
 	platform_add_devices(x3_devices, ARRAY_SIZE(x3_devices));
 	tegra_ram_console_debug_init();
@@ -704,7 +668,6 @@ static void __init tegra_x3_init(void)
 	x3_sensor_input_init();
 	tegra_serial_debug_init(TEGRA_UARTD_BASE, INT_WDT_CPU, NULL, -1, -1);
 }
-
 
 static void __init tegra_x3_reserve(void)
 {
