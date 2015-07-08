@@ -1918,7 +1918,7 @@ static irqreturn_t touch_thread_irq_handler(int irq, void *dev_id)
 #endif
 
 	/* CPU Boost */
-	input_event(ts->input_dev, EV_MSC, MSC_ACTIVITY, 1);
+//	input_event(ts->input_dev, EV_MSC, MSC_ACTIVITY, 1);
 
 	disable_irq_nosync(ts->client->irq);
 	queue_work(touch_wq, &ts->work);
@@ -2785,7 +2785,7 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	}
 
 	/* CPU Boost when entring irq handler*/
-	input_set_capability(ts->input_dev, EV_MSC, MSC_ACTIVITY);
+//	input_set_capability(ts->input_dev, EV_MSC, MSC_ACTIVITY);
 
 	/* interrupt mode */
 	if (ts->pdata->role->operation_mode) {

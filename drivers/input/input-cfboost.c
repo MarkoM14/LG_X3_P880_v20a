@@ -145,12 +145,14 @@ static void cfb_input_disconnect(struct input_handle *handle)
 
 /* XXX make configurable */
 static const struct input_device_id cfb_ids[] = {
+#if 0
 	{ /* touch screens send this at wakeup */
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
 				INPUT_DEVICE_ID_MATCH_MSCIT,
 		.evbit = { BIT_MASK(EV_MSC) },
 		.mscbit = {BIT_MASK(MSC_ACTIVITY)},
 	},
+#endif
 	{ /* trigger on any touch screen events */
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
 		.evbit = { BIT_MASK(EV_ABS) },
