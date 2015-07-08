@@ -245,15 +245,18 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-#HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
-#HOSTCXXFLAGS = -O2
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -std=gnu89 -pipe -O3 \
-	-fomit-frame-pointer -fgcse-las -floop-nest-optimize -floop-flatten \
+HOSTCFLAGS   = -O2 -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89 
+ifdef CONFIG_GRAPHITE_FLAGS
+HOSTCFLAGS += -floop-nest-optimize -floop-flatten \
 	-floop-parallelize-all -ftree-loop-linear -floop-interchange \
-	-floop-strip-mine -floop-block -fno-tree-vectorize
-HOSTCXXFLAGS = -pipe -O3 -fgcse-las -floop-nest-optimize -floop-flatten \
+	-floop-strip-mine -floop-block -floop-unroll-and-jam
+endif
+HOSTCXXFLAGS = -O2
+ifdef CONFIG_GRAPHITE_FLAGS
+HOSTCXXFLAGS += -floop-nest-optimize -floop-flatten \
 	-floop-parallelize-all -ftree-loop-linear -floop-interchange \
-	-floop-strip-mine -floop-block -fno-tree-vectorize
+	-floop-strip-mine -floop-block -floop-unroll-and-jam
+endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -361,7 +364,7 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
 OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad -pipe -ffast-math
+		 -mvectorize-with-neon-quad
 ifdef CONFIG_CC_OPTIMIZE_MORE
 OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
@@ -596,7 +599,7 @@ all: vmlinux
 
 ifdef CONFIG_MACH_X3
 KBUILD_CFLAGS	+= -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad -pipe -ffast-math
+		 -mvectorize-with-neon-quad
 endif
 ifndef CONFIG_CC_OPTIMIZE_MORE
   ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE

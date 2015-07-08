@@ -1091,6 +1091,13 @@ config CC_LTO
 
 	  This requires a gcc 4.7 or later compiler and
 
+config GRAPHITE_FLAGS
+	bool "Enable gcc graphite flags"
+	default n
+	help
+	  Enabling this option will pass graphite flags defined in Makefile
+	  to gcc.
+
 config SYSCTL
 	bool
 
