@@ -1500,44 +1500,15 @@ generic_make_request_checks(struct bio *bio)
 	if (bio_check_eod(bio, nr_sectors))
 		goto end_io;
 
-	/*
-	 * Resolve the mapping until finished. (drivers are
-	 * still free to implement/resolve their own stacking
-	 * by explicitly returning 0)
-	 *
-	 * NOTE: we don't repeat the blk_size check for each new device.
-	 * Stacking drivers are expected to know what they are doing.
-	 */
-	old_sector = -1;
-	old_dev = 0;
-	do {
-		char b[BDEVNAME_SIZE];
-		struct hd_struct *part;
-
-		q = bdev_get_queue(bio->bi_bdev);
-		if (unlikely(!q)) {
-			printk(KERN_ERR
-			       "generic_make_request: Trying to access "
-				"nonexistent block-device %s (%Lu)\n",
-				bdevname(bio->bi_bdev, b),
-				(long long) bio->bi_sector);
-			goto end_io;
-		}
-
-		if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
-			     nr_sectors > queue_max_hw_sectors(q))) {
-			printk(KERN_ERR "bio too big device %s (%u > %u)\n",
-			       bdevname(bio->bi_bdev, b),
-			       bio_sectors(bio),
-			       queue_max_hw_sectors(q));
-			goto end_io;
-		}
-
-		part = bio->bi_bdev->bd_part;
-		if (should_fail_request(part, bio->bi_size) ||
-		    should_fail_request(&part_to_disk(part)->part0,
-					bio->bi_size))
-			goto end_io;
+	q = bdev_get_queue(bio->bi_bdev);
+	if (unlikely(!q)) {
+		printk(KERN_ERR
+		       "generic_make_request: Trying to access "
+			"nonexistent block-device %s (%Lu)\n",
+			bdevname(bio->bi_bdev, b),
+			(long long) bio->bi_sector);
+		goto end_io;
+	}
 
 	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
 		     nr_sectors > queue_max_hw_sectors(q))) {
@@ -1589,12 +1560,6 @@ generic_make_request_checks(struct bio *bio)
 
 	if (blk_throtl_bio(q, bio))
 		return false;	/* throttled, will be resubmitted later */
-
-	trace_block_bio_queue(q, bio);
-
-	/* if bio = NULL, bio has been throttled and will be submitted later. */
-	if (!bio)
-		return false;
 
 	trace_block_bio_queue(q, bio);
 	return true;
