@@ -3191,8 +3191,7 @@ static void tegra_clk_shared_bus_init(struct clk *c)
 static int tegra_clk_shared_bus_set_rate(struct clk *c, unsigned long rate)
 {
 	c->u.shared_bus_user.rate = rate;
-	tegra_clk_shared_bus_update(c->parent);
-	return 0;
+	return tegra_clk_shared_bus_update(c->parent);
 }
 
 static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
@@ -3211,11 +3210,11 @@ static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
 static int tegra_clk_shared_bus_enable(struct clk *c)
 {
 	c->u.shared_bus_user.enabled = true;
-	tegra_clk_shared_bus_update(c->parent);
-	if (c->u.shared_bus_user.client) {
+	ret = tegra_clk_shared_bus_update(c->parent);
+	if (!ret && c->u.shared_bus_user.client)
 		return clk_enable(c->u.shared_bus_user.client);
-	}
-	return 0;
+
+	return ret;
 }
 
 static void tegra_clk_shared_bus_disable(struct clk *c)
