@@ -58,6 +58,8 @@
 #define PERIPH_ON_APB		(1 << 29)
 #define PERIPH_ON_CBUS		(1 << 30)
 
+#define RESET_PROPAGATION_DELAY	5
+
 #ifndef __ASSEMBLY__
 
 #include <linux/clkdev.h>
