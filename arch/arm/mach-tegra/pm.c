@@ -42,7 +42,7 @@
 #include <linux/vmalloc.h>
 #include <linux/memblock.h>
 #include <linux/console.h>
-#include <linux/pm_qos.h>
+//#include <linux/pm_qos.h>
 #include <linux/export.h>
 
 #include <linux/tegra_audio.h>
@@ -180,7 +180,7 @@ struct suspend_context tegra_sctx;
 #define MC_SECURITY_SIZE	0x70
 #define MC_SECURITY_CFG2	0x7c
 
-static struct pm_qos_request awake_cpu_freq_req;
+//static struct pm_qos_request awake_cpu_freq_req;
 
 struct dvfs_rail *tegra_cpu_rail;
 static struct dvfs_rail *tegra_core_rail;
@@ -1138,13 +1138,13 @@ void __init tegra_init_suspend(struct tegra_suspend_platform_data *plat)
 	u32 reg;
 	u32 mode;
 
-	if (plat->cpu_wake_freq == 0)
-		plat->cpu_wake_freq = CPU_WAKE_FREQ_HIGH;
+//	if (plat->cpu_wake_freq == 0)
+//		plat->cpu_wake_freq = CPU_WAKE_FREQ_HIGH;
 
 	tegra_cpu_rail = tegra_dvfs_get_rail_by_name("vdd_cpu");
 	tegra_core_rail = tegra_dvfs_get_rail_by_name("vdd_core");
-	pm_qos_add_request(&awake_cpu_freq_req, PM_QOS_CPU_FREQ_MIN,
-			   plat->cpu_wake_freq);
+//	pm_qos_add_request(&awake_cpu_freq_req, PM_QOS_CPU_FREQ_MIN,
+//			   plat->cpu_wake_freq);
 
 	tegra_pclk = clk_get_sys(NULL, "pclk");
 	BUG_ON(IS_ERR(tegra_pclk));
@@ -1413,14 +1413,14 @@ static void pm_early_suspend(struct early_suspend *h)
 {
 	if (clk_wake)
 		clk_disable(clk_wake);
-	pm_qos_update_request(&awake_cpu_freq_req, PM_QOS_DEFAULT_VALUE);
+//	pm_qos_update_request(&awake_cpu_freq_req, PM_QOS_DEFAULT_VALUE);
 }
 
 static void pm_late_resume(struct early_suspend *h)
 {
 	if (clk_wake)
 		clk_enable(clk_wake);
-	pm_qos_update_request(&awake_cpu_freq_req, (s32)pdata->cpu_wake_freq);
+//	pm_qos_update_request(&awake_cpu_freq_req, (s32)pdata->cpu_wake_freq);
 }
 
 static struct early_suspend pm_early_suspender = {

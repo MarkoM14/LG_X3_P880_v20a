@@ -1072,7 +1072,7 @@ static struct tegra_suspend_platform_data x3_suspend_data = {
 	.board_suspend = x3_board_suspend,
 	.board_resume = x3_board_resume,
 //                                  
-        .cpu_wake_freq = CPU_WAKE_FREQ_LOW,
+//        .cpu_wake_freq = CPU_WAKE_FREQ_LOW,
         .cpu_lp2_min_residency = 20000,
 	.cpu_resume_boost = 1300000,  /* CPU frequency resume boost in kHz */
 };
