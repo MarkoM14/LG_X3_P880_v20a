@@ -833,7 +833,7 @@ static struct clk tegra3_clk_twd = {
  */
 static void tegra3_cpu_clk_init(struct clk *c)
 {
-	c->state = (!is_lp_cluster() == (c->u.cpu.mode == MODE_G))? ON : OFF;
+	c->state = ((!is_lp_cluster()) == (c->u.cpu.mode == MODE_G))? ON : OFF;
 }
 
 static int tegra3_cpu_clk_enable(struct clk *c)
@@ -3209,6 +3209,7 @@ static long tegra_clk_shared_bus_round_rate(struct clk *c, unsigned long rate)
 
 static int tegra_clk_shared_bus_enable(struct clk *c)
 {
+	int ret;
 	c->u.shared_bus_user.enabled = true;
 	ret = tegra_clk_shared_bus_update(c->parent);
 	if (!ret && c->u.shared_bus_user.client)
@@ -5328,7 +5329,7 @@ static struct early_suspend tegra3_clk_early_suspender;
 static void tegra3_clk_early_suspend(struct early_suspend *h)
 {
 	struct clk *clk_disp1 = tegra_get_clock_by_name("disp1.sclk");
-	struct clk *cpu_clk_lp = &tegra_clk_virtual_cpu_lp;
+//	struct clk *cpu_clk_lp = &tegra_clk_virtual_cpu_lp;
 
 	if (clk_disp1)
 		clk_disable(clk_disp1);
@@ -5341,7 +5342,7 @@ static void tegra3_clk_early_suspend(struct early_suspend *h)
 static void tegra3_clk_late_resume(struct early_suspend *h)
 {
 	struct clk *clk_disp1 = tegra_get_clock_by_name("disp1.sclk");
-	struct clk *cpu_clk_lp = &tegra_clk_virtual_cpu_lp;
+//	struct clk *cpu_clk_lp = &tegra_clk_virtual_cpu_lp;
 
 	if (clk_disp1)
 		clk_enable(clk_disp1);
