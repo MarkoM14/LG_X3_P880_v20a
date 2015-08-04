@@ -70,6 +70,7 @@ static bool start_panicrpt = false;
 #endif
 //                                                                        
 
+#ifndef CONFIG_DISABLE_FB1_AND_HDMI
 static struct fb_videomode tegra_dc_hdmi_fallback_mode = {
 	.refresh = 60,
 	.xres = 640,
@@ -84,8 +85,9 @@ static struct fb_videomode tegra_dc_hdmi_fallback_mode = {
 	.vmode = 0,
 	.sync = 0,
 };
+#endif
 
-static struct timeval t_suspend;
+//static struct timeval t_suspend;
 static struct tegra_dc_mode override_disp_mode[3];
 
 static void _tegra_dc_controller_disable(struct tegra_dc *dc);
@@ -1720,7 +1722,7 @@ int tegra_dc_set_default_videomode(struct tegra_dc *dc)
 static bool _tegra_dc_enable(struct tegra_dc *dc)
 {
 	bool enabled = false;
-
+#if 0
 	if (dc->ndev->id == 0) {
 			struct timeval t_resume;
 			int diff_msec = 0;
@@ -1730,7 +1732,7 @@ static bool _tegra_dc_enable(struct tegra_dc *dc)
 			if((diff_msec < 150) && (diff_msec >= 0))
 					msleep(150 - diff_msec);
 	}
-
+#endif
 	if (dc->mode.pclk == 0)
 		return false;
 
@@ -1850,9 +1852,9 @@ void tegra_dc_blank(struct tegra_dc *dc)
 
 static void _tegra_dc_disable(struct tegra_dc *dc)
 {
-	if (dc->ndev->id == 0) {
-		do_gettimeofday(&t_suspend);
-	}
+//	if (dc->ndev->id == 0) {
+//		do_gettimeofday(&t_suspend);
+//	}
 
 	_tegra_dc_controller_disable(dc);
 	tegra_dc_io_end(dc);
