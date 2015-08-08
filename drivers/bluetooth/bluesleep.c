@@ -362,7 +362,7 @@ static int bluesleep_hci_event(struct notifier_block *this,
 		if (!bluesleep_hdev) {
 			bluesleep_hdev = hdev;
 			if (bsi->has_ext_wake == 1) {
-				hu  = (struct hci_uart *)hci_get_drvdata(hdev);
+				hu  = (struct hci_uart *) hdev->driver_data;
 				state = (struct uart_state *) \
 							 hu->tty->driver_data;
 				bsi->uport = state->uart_port;
@@ -450,6 +450,7 @@ static irqreturn_t bluesleep_hostwake_isr(int irq, void *dev_id)
  */
 static int bluesleep_start(void)
 {
+	int retval = 0;
 	unsigned long irq_flags;
 
 	spin_lock_irqsave(&rw_lock, irq_flags);
@@ -472,6 +473,13 @@ static int bluesleep_start(void)
 		wake_lock(&bsi->wake_lock);
 		set_bit(BT_EXT_WAKE, &flags);
 	}
+#if BT_ENABLE_IRQ_WAKE && BT_BLUEDROID_SUPPORT
+	retval = enable_irq_wake(bsi->host_wake_irq);
+	if (retval < 0) {
+		BT_ERR("Couldn't enable BT_HOST_WAKE as wakeup interrupt");
+		goto fail;
+	}
+#endif
 
 	set_bit(BT_PROTO, &flags);
 	return 0;
@@ -480,7 +488,7 @@ fail:
 		del_timer(&tx_timer);
 	atomic_inc(&open_count);
 
-	return 0;
+	return retval;
 }
 
 /**
@@ -510,6 +518,11 @@ static void bluesleep_stop(void)
 
 	atomic_inc(&open_count);
 	spin_unlock_irqrestore(&rw_lock, irq_flags);
+
+#if BT_ENABLE_IRQ_WAKE && BT_BLUEDROID_SUPPORT
+	if (disable_irq_wake(bsi->host_wake_irq))
+		BT_ERR("Couldn't disable hostwake IRQ wakeup mode\n");
+#endif
 }
 /**
  * Read the <code>BT_WAKE</code> GPIO pin value via the proc interface.
