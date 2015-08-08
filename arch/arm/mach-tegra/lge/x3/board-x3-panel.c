@@ -54,8 +54,10 @@ extern int ssd2825_bridge_disable(void);
 #endif
 
 #define x3_hdmi_hpd	TEGRA_GPIO_PN7
-
+static bool first_disp_boot = true;
 bool x3_hddisplay_on = false;
+
+static struct pm_qos_request freq_req, core_req;
 static struct workqueue_struct *bridge_work_queue;
 #if !defined(CONFIG_DISABLE_FB1_AND_HDMI)
 static struct regulator *x3_hdmi_reg = NULL;
@@ -166,12 +168,8 @@ static struct platform_device x3_backlight_device = {
 	},
 };
 
-static struct pm_qos_request core_req;
-static bool first_disp_boot = true;
 static int x3_panel_enable(struct device *dev)
 {
-	unsigned int max_cpus = pm_qos_request(PM_QOS_MAX_ONLINE_CPUS) ? : 4;
-
 	if(!x3_hddisplay_on){
 #if defined(CONFIG_MACH_RGB_CONVERTOR_SPI)
 		//printk("system_state:%d, first_disp_boot:%d \n",system_state,first_disp_boot);
@@ -182,12 +180,8 @@ static int x3_panel_enable(struct device *dev)
 			 * this is needed to be called in
 			 * late resume right after early suspend
 			 */
-			printk("x3_hddisplay_on: Set max freq and cores to boost display on\n");
-			cpufreq_set_max_freq(NULL, LONG_MAX);
-			pm_qos_update_request_timeout(&core_req, max_cpus, 2000000);
-
-			ssd2825_bridge_enable();
 			x3_hddisplay_on = true;
+			ssd2825_bridge_enable();
 			return 0;
 		}
 		else{
@@ -691,7 +685,15 @@ static void x3_panel_early_suspend(struct early_suspend *h)
 static void x3_panel_late_resume(struct early_suspend *h)
 {
 	unsigned i;
-	
+	unsigned int max_cpus = pm_qos_request(PM_QOS_MAX_ONLINE_CPUS) ? : 4;
+
+	if (!x3_hddisplay_on) {
+		cpufreq_set_max_freq(NULL, LONG_MAX);
+		pm_qos_update_request_timeout(&freq_req, 1300000, 2000000);
+		pm_qos_update_request_timeout(&core_req, max_cpus, 2000000);
+		printk("%s: Set min freq to 1300 and cores to max for 2 sec\n", __func__);
+	}
+
 #ifdef CONFIG_TEGRA_CONVSERVATIVE_GOV_ON_EARLYSUPSEND
 	cpufreq_restore_default_gov();
 #endif
@@ -706,7 +708,7 @@ static void x3_panel_late_resume(struct early_suspend *h)
 		if(1 != i) // hdmi id is 1
 			fb_blank(registered_fb[i], FB_BLANK_UNBLANK);
 	}
-//	printk("%s ended \n", __func__);
+	printk("%s ended \n", __func__);
 }
 #endif
 
@@ -822,6 +824,8 @@ int __init x3_panel_init(void)
 		create_singlethread_workqueue("bridge_spi_transaction");
 
 	pm_qos_add_request(&core_req, PM_QOS_MIN_ONLINE_CPUS,
+			   PM_QOS_DEFAULT_VALUE);
+	pm_qos_add_request(&freq_req, PM_QOS_CPU_FREQ_MIN,
 			   PM_QOS_DEFAULT_VALUE);
 
 	return err;
