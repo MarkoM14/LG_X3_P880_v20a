@@ -143,7 +143,7 @@ static ssize_t x3_rs_reset_write(struct device *dev, struct device_attribute *at
     return count;
 }
 
-static ssize_t x3_rs_reset_read(struct device *dev, struct device_attribute *attr, const char *buf)
+static ssize_t x3_rs_reset_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
     unsigned char rsbuf[3] = { 0,};
     ssize_t ret = 0;
@@ -258,7 +258,7 @@ static struct attribute_group x3_rs_wdt_attr_group = {
 
 #endif
 
-static DEVICE_ATTR(reset, 0644, x3_rs_reset_read , x3_rs_reset_write);
+static DEVICE_ATTR(reset, 0644, x3_rs_reset_show , x3_rs_reset_write);
 
 static struct attribute *x3_rs_reset_attr[] = {
     &dev_attr_reset.attr,
