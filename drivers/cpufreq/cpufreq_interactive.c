@@ -933,10 +933,10 @@ static ssize_t show_cores_states(struct kobject *kobj,
 		}				
 	}		
 
-	return sprintf(buf, "%d %d %d %d %d %d %d %d %d %d %d\n", is_lp, 
-														cores[0],cores[1],cores[2],cores[3],
-														loads[0],loads[1],loads[2],loads[3],
-														freq, cpufreq_limited_max_cores_cur);
+	return sprintf(buf, "%d %d %d %d %d %d %d %d %d %d %ld\n", is_lp, 
+		cores[0],cores[1],cores[2],cores[3],
+		loads[0],loads[1],loads[2],loads[3],
+		freq, cpufreq_limited_max_cores_cur);
 }
 
 static struct global_attr cores_states_attr = __ATTR(cores_states, 0644,

@@ -1054,7 +1054,7 @@ void __tegra_clear_framebuffer(struct platform_device *pdev,
 //		goto out;
 //
 //	dma_map_linear(&pdev->dev, to, size, DMA_TO_DEVICE);
-out:
+//out:
 	iounmap(to_io);
 }
 
