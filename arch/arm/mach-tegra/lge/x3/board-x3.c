@@ -664,7 +664,7 @@ static void __init tegra_x3_init(void)
 	x3_sensors_init();
 	x3_suspend_init();
 	x3_bpc_mgmt_init();
-	tegra_release_bootloader_fb();
+
 	x3_sensor_input_init();
 	tegra_serial_debug_init(TEGRA_UARTD_BASE, INT_WDT_CPU, NULL, -1, -1);
 }

@@ -1217,7 +1217,7 @@ void __init tegra_ram_console_debug_init(void)
 			__func__, err);
 }
 
-void __init tegra_release_bootloader_fb(void)
+static int __init tegra_release_bootloader_fb(void)
 {
 	/* Since bootloader fb is reserved in common.c, it is freed here. */
 	if (tegra_bootloader_fb_size) {
@@ -1228,7 +1228,9 @@ void __init tegra_release_bootloader_fb(void)
 			free_bootmem_late(tegra_bootloader_fb_start,
 						tegra_bootloader_fb_size);
 	}
+	return 0;
 }
+late_initcall(tegra_release_bootloader_fb);
 
 #ifdef CONFIG_TEGRA_CONVSERVATIVE_GOV_ON_EARLYSUPSEND
 char cpufreq_default_gov[CONFIG_NR_CPUS][MAX_GOV_NAME_LEN];
