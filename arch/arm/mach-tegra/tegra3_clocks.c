@@ -5042,18 +5042,16 @@ unsigned long tegra_emc_to_cpu_ratio(unsigned long cpu_rate)
 	else
 		return 0;		/* emc min */
 #else
-//                                
-//	if (cpu_rate >= 925000)
-	if (cpu_rate >= 750000)
-		return emc_max_rate;	/* cpu >= 925 MHz, emc max */
-	else if (cpu_rate >= 550000)
-		return emc_max_rate/2;	/* cpu >= 550 MHz, emc max/2 */
-	else if (cpu_rate >= 400000)
-		return 200000000;	/* cpu >= 400 MHz, emc 200 MHz */
-	else if (cpu_rate >= 300000)
-		return 100000000;	/* cpu >= 300 MHz, emc 100 MHz */
-	else if (cpu_rate >= 200000)
-		return 50000000;	/* cpu >= 200 MHz, emc 50 MHz */
+	if (cpu_rate >= 1300000)
+		return emc_max_rate;	/* cpu >= 1.3GHz, emc max */
+	else if (cpu_rate >= 975000)
+		return 550000000;	/* cpu >= 975 MHz, emc 550 MHz */
+	else if (cpu_rate >= 725000)
+		return  350000000;	/* cpu >= 725 MHz, emc 350 MHz */
+	else if (cpu_rate >= 500000)
+		return  150000000;	/* cpu >= 500 MHz, emc 150 MHz */
+	else if (cpu_rate >= 275000)
+		return  50000000;	/* cpu >= 275 MHz, emc 50 MHz */
 	else if (cpu_rate >= 100000)
 		return 25000000;	/* cpu >= 100 MHz, emc 25 MHz */
 	else
