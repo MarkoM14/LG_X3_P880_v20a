@@ -107,8 +107,6 @@ static struct resource x3_bluesleep_resources[] = {
 	},
 	[2] = {
 		.name = "host_wake",
-			.start  = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PS4),
-			.end    = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PS4),
 			.flags  = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE,
 	},
 };
@@ -124,6 +122,9 @@ extern void bluesleep_setup_uart_port(struct platform_device *uart_dev);
 
 void __init x3_setup_bluesleep(void)
 {
+	x3_bluesleep_resources[2].start =
+		x3_bluesleep_resources[2].end =
+			gpio_to_irq(TEGRA_GPIO_PS4);
 	platform_device_register(&x3_bluesleep_device);
 	bluesleep_setup_uart_port(&tegra_uartc_device);
 	tegra_gpio_enable(TEGRA_GPIO_PS4);
