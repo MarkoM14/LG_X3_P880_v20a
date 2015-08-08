@@ -1174,7 +1174,8 @@ static struct platform_device ram_console_device = {
 	.resource	= ram_console_resources,
 };
 
-void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size)
+void __init tegra_ram_console_debug_reserve(phys_addr_t ram_console_start,
+					    unsigned long ram_console_size)
 {
 	struct resource *res;
 	long ret;
@@ -1184,7 +1185,9 @@ void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size)
 	if (!res)
 		goto fail;
 
-	res->start = memblock_end_of_DRAM() - ram_console_size;
+	if (ram_console_start == USE_DEFAULT_START_ADDR)
+		ram_console_start = memblock_end_of_DRAM() - ram_console_size;
+	res->start = ram_console_start;
 	res->end = res->start + ram_console_size - 1;
 
 	// Register an extra 1M before ramconsole to store kexec stuff

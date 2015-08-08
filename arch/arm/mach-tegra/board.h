@@ -95,7 +95,10 @@ void tegra_init_cache(bool init);
 #else
 static inline void tegra_init_cache(bool init) {}
 #endif
-void __init tegra_ram_console_debug_reserve(unsigned long ram_console_size);
+
+#define USE_DEFAULT_START_ADDR 0x0
+void __init tegra_ram_console_debug_reserve(phys_addr_t ram_console_start,
+					    unsigned long ram_console_size);
 void __init tegra_ram_console_debug_init(void);
 void __init tegra_protected_aperture_init(unsigned long aperture);
 int  __init tegra_init_board_info(void);

@@ -664,7 +664,6 @@ static void __init tegra_x3_init(void)
 	x3_sensors_init();
 	x3_suspend_init();
 	x3_bpc_mgmt_init();
-
 	x3_sensor_input_init();
 	tegra_serial_debug_init(TEGRA_UARTD_BASE, INT_WDT_CPU, NULL, -1, -1);
 }
@@ -684,7 +683,7 @@ static void __init tegra_x3_reserve(void)
 	tegra_reserve(SZ_128M, SZ_8M, SZ_8M);
 #endif /*DISABLE_FB1_AND_HDMI*/
 #endif
-	tegra_ram_console_debug_reserve(SZ_1M);
+	tegra_ram_console_debug_reserve(USE_DEFAULT_START_ADDR, SZ_1M);
 }
 
 MACHINE_START(X3, "x3")
