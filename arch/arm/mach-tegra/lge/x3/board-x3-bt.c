@@ -92,59 +92,42 @@ void x3_bt_rfkill(void)
 #endif /* CONFIG_BCM4330_RFKILL */
 //                                                 
 
+static struct resource x3_bluesleep_resources[] = {
+	[0] = {
+		.name = "gpio_host_wake",
+			.start  = TEGRA_GPIO_PS4,
+			.end    = TEGRA_GPIO_PS4,
+			.flags  = IORESOURCE_IO,
+	},
+	[1] = {
+		.name = "gpio_ext_wake",
+			.start  = TEGRA_GPIO_PS3,
+			.end    = TEGRA_GPIO_PS3,
+			.flags  = IORESOURCE_IO,
+	},
+	[2] = {
+		.name = "host_wake",
+			.start  = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PS4),
+			.end    = TEGRA_GPIO_TO_IRQ(TEGRA_GPIO_PS4),
+			.flags  = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE,
+	},
+};
+
+static struct platform_device x3_bluesleep_device = {
+	.name           = "bluesleep",
+	.id             = -1,
+	.num_resources  = ARRAY_SIZE(x3_bluesleep_resources),
+	.resource       = x3_bluesleep_resources,
+};
+
 extern void bluesleep_setup_uart_port(struct platform_device *uart_dev);
 
 void __init x3_setup_bluesleep(void)
 {
-	struct platform_device *pdev = NULL;
-	struct resource *res;
-
-	pdev = platform_device_alloc("bluesleep", 0);
-	if (!pdev) {
-		pr_err("unable to allocate platform device for bluesleep");
-		return;
-	}
-
-	res = kzalloc(sizeof(struct resource) * 3, GFP_KERNEL);
-	if (!res) {
-		pr_err("unable to allocate resource for bluesleep\n");
-		goto err_free_dev;
-	}
-
-	res[0].name   = "gpio_host_wake";
-	res[0].start  = TEGRA_GPIO_PS4;
-	res[0].end	  = TEGRA_GPIO_PS4;
-	res[0].flags  = IORESOURCE_IO;
-
-	res[1].name   = "gpio_ext_wake";
-	res[1].start  = TEGRA_GPIO_PS3;
-	res[1].end	  = TEGRA_GPIO_PS3;
-	res[1].flags  = IORESOURCE_IO;
-
-	res[2].name   = "host_wake";
-	res[2].start  = gpio_to_irq(TEGRA_GPIO_PS4);
-	res[2].end	  = gpio_to_irq(TEGRA_GPIO_PS4);
-	res[2].flags  = IORESOURCE_IRQ | IORESOURCE_IRQ_HIGHEDGE ;
-
-	if (platform_device_add_resources(pdev, res, 3)) {
-		pr_err("unable to add resources to bluesleep device\n");
-		goto err_free_res;
-	}
-
-	if (platform_device_add(pdev)) {
-		pr_err("unable to add bluesleep device\n");
-		goto err_free_res;
-	}
-
+	platform_device_register(&x3_bluesleep_device);
 	bluesleep_setup_uart_port(&tegra_uartc_device);
 	tegra_gpio_enable(TEGRA_GPIO_PS4);
 	tegra_gpio_enable(TEGRA_GPIO_PS3);
 
-	return;
-
-err_free_res:
-	kfree(res);
-err_free_dev:
-	platform_device_put(pdev);
 	return;
 }
