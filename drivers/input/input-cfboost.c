@@ -42,6 +42,7 @@ MODULE_AUTHOR("Antti P Miettinen <amiettinen@nvidia.com>");
 MODULE_DESCRIPTION("Input event CPU frequency booster");
 MODULE_LICENSE("GPL v2");
 
+//#define START_DELAY
 
 static struct pm_qos_request freq_req, core_req;
 static unsigned int boost_freq; /* kHz */
@@ -69,7 +70,9 @@ static unsigned long boost_cpus;
 module_param(boost_cpus, ulong, 0644);
 
 static unsigned long last_boost_jiffies;
+#ifdef START_DELAY
 static unsigned int start_delay = 0;
+#endif
 
 static void cfb_boost(struct kthread_work *w)
 {
@@ -92,13 +95,15 @@ static void cfb_input_event(struct input_handle *handle, unsigned int type,
 	if (boost_cpus > 0 || boost_freq > 0) {
 		if (jiffies < last_boost_jiffies ||
 			jiffies > last_boost_jiffies + msecs_to_jiffies(boost_time/2)) {
-			//Block it for 15 events on boot.Android min cpu setting is affected
-			if (start_delay <= 15) {
+#ifdef START_DELAY
+			//Block it for 10 events on boot.Android min cpu setting is affected
+			if (start_delay <= 10) {
 				start_delay++;
 				pr_info("icfboost:Blocking boost event %d of 15\n", start_delay);
 				last_boost_jiffies = jiffies;
 				return;
 			}
+#endif
 			queue_kthread_work(&boost_worker, &boost_work);
 			last_boost_jiffies = jiffies;
 		}
