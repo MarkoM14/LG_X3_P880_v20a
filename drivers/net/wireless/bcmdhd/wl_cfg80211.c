@@ -9368,11 +9368,11 @@ s32 wl_cfg80211_attach_post(struct net_device *ndev)
 		if (cfg->wdev) {
 			ret = wl_cfgp2p_supported(cfg, ndev);
 			if (ret > 0) {
-#if !defined(WL_ENABLE_P2P_IF)
+//#if !defined(WL_ENABLE_P2P_IF)
 				cfg->wdev->wiphy->interface_modes |=
 					(BIT(NL80211_IFTYPE_P2P_CLIENT)|
 					BIT(NL80211_IFTYPE_P2P_GO));
-#endif /* !WL_ENABLE_P2P_IF */
+//#endif /* !WL_ENABLE_P2P_IF */
 				if ((err = wl_cfgp2p_init_priv(cfg)) != 0)
 					goto fail;
 

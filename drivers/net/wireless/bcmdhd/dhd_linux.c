@@ -590,9 +590,12 @@ static int dhd_toe_set(dhd_info_t *dhd, int idx, uint32 toe_ol);
 static int dhd_wl_host_event(dhd_info_t *dhd, int *ifidx, void *pktdata,
                              wl_event_msg_t *event_ptr, void **data_ptr);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && (LINUX_VERSION_CODE <= \
+        KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM_SLEEP)
 #ifdef PROP_TXSTATUS
 static int dhd_wakelock_waive(dhd_info_t *dhdinfo);
 static int dhd_wakelock_restore(dhd_info_t *dhdinfo);
+#endif
 #endif
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && (LINUX_VERSION_CODE <= \
@@ -6412,6 +6415,8 @@ int dhd_os_wd_wake_unlock(dhd_pub_t *pub)
 	return ret;
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)) && (LINUX_VERSION_CODE <= \
+        KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM_SLEEP)
 #ifdef PROP_TXSTATUS
 /* waive wakelocks for operations such as IOVARs in suspend function, must be closed
  * by a paired function call to dhd_wakelock_restore. returns current wakelock counter
@@ -6470,6 +6475,7 @@ exit:
 	return ret;
 }
 #endif /* PROP_TXSTATUS */
+#endif
 
 bool dhd_os_check_if_up(dhd_pub_t *pub)
 {
