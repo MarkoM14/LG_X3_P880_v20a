@@ -119,6 +119,10 @@ obj-$(CONFIG_CORDIC) += cordic.o
 obj-$(CONFIG_GENERIC_STRNCPY_FROM_USER) += strncpy_from_user.o
 obj-$(CONFIG_GENERIC_STRNLEN_USER) += strnlen_user.o
 
+CFLAGS_snappy.o += $(call cc-disable-warning, declaration-after-statement) \
+		   -DNDEBUG=1
+obj-$(CONFIG_SNAPPY) += snappy.o
+
 hostprogs-y	:= gen_crc32table
 clean-files	:= crc32table.h
 
