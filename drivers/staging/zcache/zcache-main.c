@@ -1986,7 +1986,11 @@ static int __init zcache_comp_init(void)
 					zcache_comp_name);
 	}
 	if (!ret)
+#ifdef CONFIG_ZCACHE_CRYPTO_SNAPPY
+		strcpy(zcache_comp_name, "snappy");
+#else
 		strcpy(zcache_comp_name, "lzo");
+#endif
 	ret = crypto_has_comp(zcache_comp_name, 0, 0);
 	if (!ret) {
 		ret = 1;
