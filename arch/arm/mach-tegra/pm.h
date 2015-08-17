@@ -115,7 +115,9 @@ u64 tegra_rtc_read_ms(void);
 /*
  * Callbacks for platform drivers to implement.
  */
+#ifndef CONFIG_MACH_X3
 extern void (*tegra_deep_sleep)(int);
+#endif
 
 unsigned int tegra_idle_lp2_last(unsigned int us, unsigned int flags);
 

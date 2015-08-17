@@ -987,6 +987,7 @@ fail:
 /*
  * Function pointers to optional board specific function
  */
+#ifndef CONFIG_MACH_X3
 void (*tegra_deep_sleep)(int);
 EXPORT_SYMBOL(tegra_deep_sleep);
 
@@ -996,6 +997,7 @@ static int tegra_suspend_prepare(void)
 		tegra_deep_sleep(1);
 	return 0;
 }
+#endif
 
 static void tegra_suspend_finish(void)
 {
@@ -1005,14 +1007,17 @@ static void tegra_suspend_finish(void)
 		pr_info("Tegra: resume CPU boost to %u KHz: %s (%d)\n",
 			pdata->cpu_resume_boost, ret ? "Failed" : "OK", ret);
 	}
-#endif
+#else
 	if ((current_suspend_mode == TEGRA_SUSPEND_LP0) && tegra_deep_sleep)
 		tegra_deep_sleep(0);
+#endif
 }
 
 static const struct platform_suspend_ops tegra_suspend_ops = {
 	.valid		= suspend_valid_only_mem,
+#ifndef CONFIG_MACH_X3
 	.prepare	= tegra_suspend_prepare,
+#endif
 	.finish		= tegra_suspend_finish,
 	.prepare_late	= tegra_suspend_prepare_late,
 	.wake		= tegra_suspend_wake,
