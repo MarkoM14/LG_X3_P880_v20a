@@ -3441,7 +3441,7 @@ static struct clk tegra_pll_m_out1 = {
 	.parent    = &tegra_pll_m,
 	.reg       = 0x94,
 	.reg_shift = 0,
-	.max_rate  = 600000000,
+	.max_rate  = 900000000, //600000000,
 };
 
 static struct clk_pll_freq_table tegra_pll_p_freq_table[] = {
@@ -5031,7 +5031,7 @@ unsigned long tegra_emc_to_cpu_ratio(unsigned long cpu_rate)
 
 	/* Vote on memory bus frequency based on cpu frequency;
 	   cpu rate is in kHz, emc rate is in Hz */
-//                
+//emc max = 900, min 12MHz
 #if !defined(CONFIG_MACH_X3) &&  !defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 	if (cpu_rate >= 925000)
 		return emc_max_rate;	/* cpu >= 925 MHz, emc max */
@@ -5057,7 +5057,6 @@ unsigned long tegra_emc_to_cpu_ratio(unsigned long cpu_rate)
 	else
 		return 0;		/* emc min */
 #endif /* !defined(CONFIG_MACH_X3) */
-//            
 }
 
 int tegra_update_mselect_rate(unsigned long cpu_rate)
