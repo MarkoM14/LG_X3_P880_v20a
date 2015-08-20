@@ -245,7 +245,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -O2 -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89 
+HOSTCFLAGS   = -O2 -Wall -Wmissing-prototypes -Wstrict-prototypes -fomit-frame-pointer -std=gnu89
 ifdef CONFIG_GRAPHITE_FLAGS
 HOSTCFLAGS += -floop-nest-optimize -floop-flatten \
 	-floop-parallelize-all -ftree-loop-linear -floop-interchange \
@@ -364,14 +364,15 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
 OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad
+		 -mvectorize-with-neon-quad --param l1-cache-line-size=32 \
+		 --param l1-cache-size=32 --param l2-cache-size=1024 -mfloat-abi=softfp
 ifdef CONFIG_CC_OPTIMIZE_MORE
 OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
-		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
-		-funsafe-loop-optimizations -fivopts -ftree-loop-im -ftree-loop-ivcanon \
-		-funswitch-loops -frename-registers -ftracer -fipa-pta -fforce-addr \
+		-fgcse-sm -fgcse-las -fsection-anchors -fivopts \
+		-funsafe-loop-optimizations -ftree-loop-im -ftree-loop-ivcanon \
+		-funswitch-loops -frename-registers -ftracer -fforce-addr \
 		-fsched-spec-load -fweb -munaligned-access -fpredictive-commoning \
-		-fsingle-precision-constant -fno-tree-vectorize
+		-fsingle-precision-constant -fno-tree-vectorize -fno-inline-functions
 endif
 endif
 MODULEFLAGS	= -DMODULE $(OPTIMIZATION_FLAGS)
@@ -599,7 +600,8 @@ all: vmlinux
 
 ifdef CONFIG_MACH_X3
 KBUILD_CFLAGS	+= -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad
+		 -mvectorize-with-neon-quad --param l1-cache-line-size=32 \
+		 --param l1-cache-size=32 --param l2-cache-size=1024 -mfloat-abi=softfp
 endif
 ifndef CONFIG_CC_OPTIMIZE_MORE
   ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
@@ -609,11 +611,11 @@ ifndef CONFIG_CC_OPTIMIZE_MORE
   endif
 else
 KBUILD_CFLAGS	+= -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
-		-fno-inline-functions -fgcse-sm -fgcse-las -fsection-anchors \
-		-funsafe-loop-optimizations -fivopts -ftree-loop-im -ftree-loop-ivcanon \
-		-funswitch-loops -frename-registers -ftracer -fipa-pta -fforce-addr \
+		-fgcse-sm -fgcse-las -fsection-anchors -fivopts \
+		-funsafe-loop-optimizations -ftree-loop-im -ftree-loop-ivcanon \
+		-funswitch-loops -frename-registers -ftracer -fforce-addr \
 		-fsched-spec-load -fweb -munaligned-access -fpredictive-commoning \
-		-fsingle-precision-constant -fno-tree-vectorize
+		-fsingle-precision-constant -fno-tree-vectorize -fno-inline-functions
 LDFLAGS 	+= -O3 --sort-common
 endif
 
@@ -669,6 +671,10 @@ else
 # -fomit-frame-pointer with FUNCTION_TRACER.
 ifndef CONFIG_FUNCTION_TRACER
 KBUILD_CFLAGS	+= -fomit-frame-pointer
+else
+ifdef CONFIG_MACH_X3
+KBUILD_CFLAGS	+= -fno-omit-frame-pointer
+endif
 endif
 endif
 
