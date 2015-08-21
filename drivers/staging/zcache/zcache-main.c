@@ -31,7 +31,6 @@
 #include <linux/math64.h>
 #include <linux/crypto.h>
 #include <linux/string.h>
-#include <linux/idr.h>
 #include "tmem.h"
 
 #include "../zsmalloc/zsmalloc.h"
@@ -51,13 +50,14 @@
 	(__GFP_FS | __GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC)
 #endif
 
+#define MAX_POOLS_PER_CLIENT 16
 #define MAX_CLIENTS 16
 #define LOCAL_CLIENT ((uint16_t)-1)
 
 MODULE_LICENSE("GPL");
 
 struct zcache_client {
-	struct idr tmem_pools;
+	struct tmem_pool *tmem_pools[MAX_POOLS_PER_CLIENT];
 	struct zs_pool *zspool;
 	bool allocated;
 	atomic_t refcount;
@@ -91,9 +91,12 @@ static inline bool is_local_client(struct zcache_client *cli)
 }
 
 /* crypto API for zcache  */
-#define ZCACHE_COMP_NAME_SZ CRYPTO_MAX_ALG_NAME
-static char zcache_comp_name[ZCACHE_COMP_NAME_SZ];
-static struct crypto_comp * __percpu *zcache_comp_pcpu_tfms;
+#ifdef CONFIG_ZCACHE_CRYPTO_SNAPPY
+static char *zcache_comp_name = "snappy";
+#else
+static char *zcache_comp_name = "lzo";
+#endif
+static struct crypto_comp * __percpu *zcache_comp_pcpu_tfms __read_mostly;
 
 enum comp_op {
 	ZCACHE_COMPOP_COMPRESS,
@@ -949,11 +952,13 @@ static struct tmem_pool *zcache_get_pool_by_id(uint16_t cli_id, uint16_t poolid)
 	cli = get_zcache_client(cli_id);
 	if (!cli)
 		goto out;
-
-	atomic_inc(&cli->refcount);
-	pool = idr_find(&cli->tmem_pools, poolid);
-	if (pool != NULL)
-		atomic_inc(&pool->refcount);
+	if (!is_local_client(cli))
+		atomic_inc(&cli->refcount);
+	if (poolid < MAX_POOLS_PER_CLIENT) {
+		pool = cli->tmem_pools[poolid];
+		if (pool != NULL)
+			atomic_inc(&pool->refcount);
+	}
 out:
 	return pool;
 }
@@ -985,7 +990,6 @@ int zcache_new_client(uint16_t cli_id)
 	cli->zspool = zs_create_pool("zcache", ZCACHE_GFP_MASK);
 	if (cli->zspool == NULL)
 		goto out;
-	idr_init(&cli->tmem_pools);
 #endif
 	ret = 0;
 out:
@@ -1662,10 +1666,10 @@ static int zcache_destroy_pool(int cli_id, int pool_id)
 		goto out;
 
 	atomic_inc(&cli->refcount);
-	pool = idr_find(&cli->tmem_pools, pool_id);
+	pool = cli->tmem_pools[pool_id];
 	if (pool == NULL)
 		goto out;
-	idr_remove(&cli->tmem_pools, pool_id);
+	cli->tmem_pools[pool_id] = NULL;
 	/* wait for pool activity on other cpus to quiesce */
 	while (atomic_read(&pool->refcount) != 0)
 		;
@@ -1685,7 +1689,6 @@ static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
 	int poolid = -1;
 	struct tmem_pool *pool;
 	struct zcache_client *cli = NULL;
-	int r;
 
 	cli = get_zcache_client(cli_id);
 	if (cli == NULL)
@@ -1698,18 +1701,13 @@ static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
 		goto out;
 	}
 
-	do {
-		r = idr_pre_get(&cli->tmem_pools, GFP_ATOMIC);
-		if (r != 1) {
-			kfree(pool);
-			pr_info("zcache: pool creation failed: out of memory\n");
-			goto out;
-		}
-		r = idr_get_new(&cli->tmem_pools, pool, &poolid);
-	} while (r == -EAGAIN);
-	if (r) {
-		pr_info("zcache: pool creation failed: error %d\n", r);
+	for (poolid = 0; poolid < MAX_POOLS_PER_CLIENT; poolid++)
+		if (cli->tmem_pools[poolid] == NULL)
+			break;
+	if (poolid >= MAX_POOLS_PER_CLIENT) {
+		pr_info("zcache: pool creation failed: max exceeded\n");
 		kfree(pool);
+		poolid = -1;
 		goto out;
 	}
 
@@ -1717,6 +1715,7 @@ static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
 	pool->client = cli;
 	pool->pool_id = poolid;
 	tmem_new_pool(pool, flags);
+	cli->tmem_pools[poolid] = pool;
 	pr_info("zcache: created %s tmem pool, id=%d, client=%d\n",
 		flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
 		poolid, cli_id);
@@ -1939,66 +1938,55 @@ struct frontswap_ops zcache_frontswap_register_ops(void)
  * NOTHING HAPPENS!
  */
 
-static int zcache_enabled;
+static bool zcache_enabled __read_mostly;
 
 static int __init enable_zcache(char *s)
 {
-	zcache_enabled = 1;
+	zcache_enabled = true;
 	return 1;
 }
 __setup("zcache", enable_zcache);
 
 /* allow independent dynamic disabling of cleancache and frontswap */
 
-static int use_cleancache = 1;
+static bool use_cleancache __read_mostly = true;
 
 static int __init no_cleancache(char *s)
 {
-	use_cleancache = 0;
+	use_cleancache = false;
 	return 1;
 }
 
 __setup("nocleancache", no_cleancache);
 
-static int use_frontswap = 1;
+static bool use_frontswap __read_mostly = true;
 
 static int __init no_frontswap(char *s)
 {
-	use_frontswap = 0;
+	use_frontswap = false;
 	return 1;
 }
 
 __setup("nofrontswap", no_frontswap);
 
+/*
 static int __init enable_zcache_compressor(char *s)
 {
-	strncpy(zcache_comp_name, s, ZCACHE_COMP_NAME_SZ);
-	zcache_enabled = 1;
+	strlcpy(zcache_comp_name, s, sizeof(zcache_comp_name));
+	zcache_enabled = true;
 	return 1;
 }
 __setup("zcache=", enable_zcache_compressor);
-
+*/
 
 static int __init zcache_comp_init(void)
 {
 	int ret = 0;
 
 	/* check crypto algorithm */
-	if (*zcache_comp_name != '\0') {
-		ret = crypto_has_comp(zcache_comp_name, 0, 0);
-		if (!ret)
-			pr_info("zcache: %s not supported\n",
-					zcache_comp_name);
-	}
-	if (!ret)
-#ifdef CONFIG_ZCACHE_CRYPTO_SNAPPY
-		strcpy(zcache_comp_name, "snappy");
-#else
-		strcpy(zcache_comp_name, "lzo");
-#endif
 	ret = crypto_has_comp(zcache_comp_name, 0, 0);
 	if (!ret) {
-		ret = 1;
+		ret = -1;
 		goto out;
 	}
 	pr_info("zcache: using %s compressor\n", zcache_comp_name);
@@ -2083,4 +2071,4 @@ out:
 	return ret;
 }
 
-module_init(zcache_init)
+late_initcall(zcache_init);
