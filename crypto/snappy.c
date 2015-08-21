@@ -45,28 +45,39 @@ static int snp_compress(struct crypto_tfm *tfm, const u8 *src,
 			    unsigned int slen, u8 *dst, unsigned int *dlen)
 {
 	struct snappy_ctx *ctx = crypto_tfm_ctx(tfm);
-	size_t olen;
+	size_t olen = *dlen;
 	int err;
 
 	/* XXXX very pessimistic. check in snappy? */
 	if (*dlen < snappy_max_compressed_length(*dlen))
 		return -EINVAL;
 	err = snappy_compress(&ctx->env, src, slen, dst, &olen);
+
+	if (err != 0)
+		return -EINVAL;
+
 	*dlen = olen;
-	return err;
+	return 0;
 }
 
 static int snp_decompress(struct crypto_tfm *tfm, const u8 *src,
 			      unsigned int slen, u8 *dst, unsigned int *dlen)
 {
-	size_t ulen;
+	size_t ulen = *dlen;
+	int err;
 
 	if (!snappy_uncompressed_length(src, slen, &ulen))
 		return -EIO;
 	if (*dlen < ulen)
 		return -EINVAL;
+
+	err = snappy_uncompress(src, slen, dst);
+
+	if (err != 0)
+		return -EINVAL;
+
 	*dlen = ulen;
-	return snappy_uncompress(src, slen, dst) ? 0 : -EIO;
+	return 0;
 }
 
 static struct crypto_alg alg = {

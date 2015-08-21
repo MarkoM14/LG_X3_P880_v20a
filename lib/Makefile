@@ -120,7 +120,7 @@ obj-$(CONFIG_GENERIC_STRNCPY_FROM_USER) += strncpy_from_user.o
 obj-$(CONFIG_GENERIC_STRNLEN_USER) += strnlen_user.o
 
 CFLAGS_snappy.o += $(call cc-disable-warning, declaration-after-statement) \
-		   -DNDEBUG=1
+		   -Wall -g -O2 -DNDEBUG=1 -DSG=1
 obj-$(CONFIG_SNAPPY) += snappy.o
 
 hostprogs-y	:= gen_crc32table
