@@ -337,7 +337,7 @@ static void hook_det_work(struct work_struct *work)
 
 static irqreturn_t headset_hook_int_handler(int irq, void *dev_id)
 {
-	static i=0; //20130110 keunhui.park [Audio] prevent pressing hook key while unplugging headset
+	static int i=0; //20130110 keunhui.park [Audio] prevent pressing hook key while unplugging headset
 	struct headset_switch_data	*switch_data =
 	    (struct headset_switch_data *)dev_id;
 

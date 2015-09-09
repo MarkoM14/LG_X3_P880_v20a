@@ -1497,7 +1497,13 @@ static int tegra_max98088_init(struct snd_soc_pcm_runtime *rtd)
 	set_bit(KEY_HOOK, switch_data->ip_dev->keybit); 
 
 	switch_data->ip_dev->name = "tegra-snd-max98088";
-	input_register_device(switch_data->ip_dev);  
+
+	ret = input_register_device(switch_data->ip_dev);
+	if (ret != 0) {
+		input_free_device(switch_data->ip_dev);
+		switch_data->ip_dev = NULL;
+		dev_err(card->dev, "Failed to register input device\n");
+	}
 	headset_sw_data = switch_data;   
 #endif
 //                                             

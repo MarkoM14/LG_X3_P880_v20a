@@ -1786,6 +1786,7 @@ static int max98088_dai2_set_fmt(struct snd_soc_dai *codec_dai,
        return 0;
 }
 
+#if !defined(CONFIG_MACH_X3) && ! defined(CONFIG_MACH_LX) && !defined(CONFIG_MACH_VU10)
 static int max98088_dai1_digital_mute(struct snd_soc_dai *codec_dai, int mute)
 {
        struct snd_soc_codec *codec = codec_dai->codec;
@@ -1815,6 +1816,7 @@ static int max98088_dai2_digital_mute(struct snd_soc_dai *codec_dai, int mute)
                            M98088_DAI_MUTE_MASK, reg);
        return 0;
 }
+#endif
 
 static void max98088_sync_cache(struct snd_soc_codec *codec)
 {
@@ -1886,6 +1888,7 @@ static int max98088_set_bias_level(struct snd_soc_codec *codec,
 
 //                                          
 #if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
+#if 0
 static int max98088_startup(struct snd_pcm_substream *substream,
 			struct snd_soc_dai *dai){
 	struct snd_soc_codec *codec = dai->codec;
@@ -1910,17 +1913,17 @@ static int max98088_shutdown(struct snd_pcm_substream *substream,
 
 	// reset audio codec
 	if( --max98088->active == 0 ){
-#if 0		
+	
 		snd_soc_update_bits(codec, M98088_REG_51_PWR_SYS,
 						M98088_SHDNRUN, 0);
 		msleep(50);
 		snd_soc_update_bits(codec, M98088_REG_51_PWR_SYS,
 						M98088_SHDNRUN, M98088_SHDNRUN);
-#endif
 	}
 	
 	return 0;
 }
+#endif
 #endif
 //                                          
 
@@ -1950,8 +1953,8 @@ static struct snd_soc_dai_ops max98088_fm_ops = {
        .set_sysclk = max98088_dai_set_sysclk,
 };
 static struct snd_soc_dai_ops max98088_call_ops = {
-       .startup = max98088_startup,
-       .shutdown = max98088_shutdown,
+//       .startup = max98088_startup,
+//       .shutdown = max98088_shutdown,
        .set_sysclk = max98088_dai_set_sysclk,
        .set_fmt = max98088_dai1_set_fmt,
        .hw_params = max98088_dai1_hw_params,
@@ -2502,7 +2505,7 @@ static int max98088_remove(struct snd_soc_codec *codec)
 static int max98088_suspend(struct snd_soc_codec *codec, pm_message_t state)
 {
 	struct max98088_priv *max98088 = snd_soc_codec_get_drvdata(codec);
-    printk("(snd codec) suspend.....\n");
+//    printk("(snd codec) suspend.....\n");
 	disable_irq(max98088->irq);
 	max98088_set_bias_level(codec, SND_SOC_BIAS_OFF);
 
@@ -2513,7 +2516,7 @@ static int max98088_resume(struct snd_soc_codec *codec)
 {
 	struct max98088_priv *max98088 = snd_soc_codec_get_drvdata(codec);
 
-    printk("(snd codec) resume.....\n");
+//    printk("(snd codec) resume.....\n");
 	max98088_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
 	max98088_report_jack(codec);
 	enable_irq(max98088->irq);
