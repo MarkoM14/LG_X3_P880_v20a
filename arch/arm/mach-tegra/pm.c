@@ -1024,41 +1024,6 @@ static const struct platform_suspend_ops tegra_suspend_ops = {
 	.enter		= tegra_suspend_enter,
 };
 
-//                                          
-#if defined(CONFIG_MACH_LGE)
-int set_suspend_mode(const char* buf){
-	int len;
-	const char *name_ptr;
-	enum tegra_suspend_mode new_mode;
-
-	name_ptr = buf;
-	while (*name_ptr && !isspace(*name_ptr))
-		name_ptr++;
-	len = name_ptr - buf;
-	if (!len)
-		goto bad_name;
-	/* TEGRA_SUSPEND_NONE not allowed as suspend state */
-	if (!(strncmp(buf, tegra_suspend_name[TEGRA_SUSPEND_NONE], len))) {
-		pr_info("Illegal tegra suspend state: %s\n", buf);
-		goto bad_name;
-	}
-
-	for (new_mode = TEGRA_SUSPEND_NONE; \
-			new_mode < TEGRA_MAX_SUSPEND_MODE; ++new_mode) {
-		if (!strncmp(buf, tegra_suspend_name[new_mode], len)) {
-			current_suspend_mode = new_mode;
-			break;
-		}
-	}
-
-	return 0;
-bad_name:
-	return -1;
-}
-EXPORT_SYMBOL(set_suspend_mode);
-#endif
-//                                          
-
 static ssize_t suspend_mode_show(struct kobject *kobj,
 					struct kobj_attribute *attr, char *buf)
 {

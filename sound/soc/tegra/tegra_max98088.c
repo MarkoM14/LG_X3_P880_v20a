@@ -40,7 +40,9 @@
 #ifdef CONFIG_SWITCH
 #include <linux/switch.h>
 #endif
-
+#if defined(CONFIG_MACH_X3)
+#include <linux/wakelock.h>
+#endif
 #include <mach/tegra_asoc_pdata.h>
 
 #include <sound/core.h>
@@ -91,7 +93,9 @@ const char *tegra_max98088_i2s_dai_name[TEGRA30_NR_I2S_IFC] = {
 extern int g_is_call_mode;
 
 #if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
-struct headset_switch_data	*headset_sw_data;	//                                             
+struct headset_switch_data	*headset_sw_data;
+/*HACK add an wakelock when in call mode*/
+static struct wake_lock call_wake_lock;
 #endif
 
 struct tegra_max98088 {
@@ -253,11 +257,6 @@ static int tegra_call_mode_put(struct snd_kcontrol *kcontrol,
 	int is_call_mode_new = ucontrol->value.integer.value[0];
 	int codec_index;
 	unsigned int i;
-//                                          
-#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
-	extern int set_suspend_mode(const char* buf);
-#endif
-//                                          
 
 	if (machine->is_call_mode == is_call_mode_new)
 		return 0;
@@ -273,12 +272,12 @@ static int tegra_call_mode_put(struct snd_kcontrol *kcontrol,
 			machine->codec_info[codec_index].channels == 0)
 				return -EINVAL;
 
-//                                          
-#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
-		set_suspend_mode("lp1");
+#if defined(CONFIG_MACH_X3)
+		if (!wake_lock_active(&call_wake_lock)) {
+		wake_lock(&call_wake_lock);
+		pr_info("%s: Wakelock on\n", __func__);
+	}
 #endif
-//                                          
-
 		for (i = 0; i < machine->pcard->num_links; i++)
 			machine->pcard->dai_link[i].ignore_suspend = 1;
 
@@ -295,11 +294,12 @@ static int tegra_call_mode_put(struct snd_kcontrol *kcontrol,
 		for (i = 0; i < machine->pcard->num_links; i++)
 			machine->pcard->dai_link[i].ignore_suspend = 0;
 
-//                                          
-#if defined(CONFIG_MACH_X3) || defined(CONFIG_MACH_LX) || defined(CONFIG_MACH_VU10)
-		set_suspend_mode("lp0");
+#if defined(CONFIG_MACH_X3)
+		if (wake_lock_active(&call_wake_lock)) {
+			wake_unlock(&call_wake_lock);
+			pr_info("%s: Wakelock off\n", __func__);
+	}
 #endif
-//                                          
 #endif
 	}
 
@@ -1121,7 +1121,6 @@ static void tegra_voice_call_shutdown(struct snd_pcm_substream *substream)
 #endif
 //                                         
 
-//                                                                                                
     //wt if fmradio is ON..
     if (machine->is_radio_mode == true)
     {
@@ -1149,7 +1148,6 @@ static void tegra_voice_call_shutdown(struct snd_pcm_substream *substream)
         
         printk("FM RADIO is on - register dapm's to ignore_suspend again... \n");
     }
-//                                            
 
 	return;
 }
@@ -1870,6 +1868,9 @@ static __devinit int tegra_max98088_driver_probe(struct platform_device *pdev)
 	tegra_max98088_i2s_dai_name[machine->codec_info[BT_SCO].i2s_id];
 #endif
 //                                         
+#endif
+#if defined(CONFIG_MACH_X3)
+	wake_lock_init(&call_wake_lock, WAKE_LOCK_SUSPEND, "call_wake_lock");
 #endif
 
 	card->dapm.idle_bias_off = 1;
