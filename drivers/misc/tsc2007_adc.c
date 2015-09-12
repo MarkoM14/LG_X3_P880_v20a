@@ -140,7 +140,7 @@ static int tsc2007_ADC_read(struct i2c_client *client)
 	if(DEBUG_ADC == 1) dev_info(&client->dev, "%s end..\n", __func__);
 	return value;
 }
-
+/*
 static int tsc2007_ADC_setup(struct i2c_client *client)
 {
 	int ret = 0;
@@ -188,7 +188,7 @@ static int tsc2007_ADC_rev(struct i2c_client *client)
 	dev_info(&client->dev, "%s : chip->rev = 0x%x\n",__func__,chip->rev);
 	
 	return 0;
-}
+}*/
 
 static int tsc2007_ADC_temp(struct i2c_client *client)
 {
@@ -292,8 +292,6 @@ static int __devinit tsc2007_ADC_probe(struct i2c_client *client,
 
 	chip->battery.name		= "tsc2007_adc";
 
-	reference = chip;
-	
 	chip->battery.type		= POWER_SUPPLY_TYPE_BATTERY;
 	chip->battery.get_property	= tsc2007_ADC_get_property;
 	chip->battery.properties	= tsc2007_battery_props;
@@ -319,7 +317,7 @@ static int __devexit tsc2007_ADC_remove(struct i2c_client *client)
 {
 	return 0;
 }
-
+/*
 static int tsc2007_ADC_suspend(struct device *dev)
 {
 	//struct max17043_chip *chip = dev_get_drvdata(dev);
@@ -335,7 +333,7 @@ static int tsc2007_ADC_resume(struct device *dev)
 	//struct max17043_chip *chip = dev_get_drvdata(dev);
 
 	return 0;
-}
+}*/
 
 static const struct i2c_device_id tsc2007_ADC_idtable[] = {
 	{ "tsc2007_adc", 0 },
@@ -351,8 +349,8 @@ static struct i2c_driver tsc2007_ADC_driver = {
 	},
 	.probe		= tsc2007_ADC_probe,
 	.remove		= __devexit_p(tsc2007_ADC_remove),
-	.suspend	= tsc2007_ADC_suspend,
-	.resume		= tsc2007_ADC_resume,
+//	.suspend	= tsc2007_ADC_suspend,
+//	.resume		= tsc2007_ADC_resume,
 	.id_table	= tsc2007_ADC_idtable,
 	
 	

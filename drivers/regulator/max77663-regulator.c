@@ -537,7 +537,9 @@ static int max77663_regulator_set_mode(struct regulator_dev *rdev,
 				       unsigned int mode)
 {
 	struct max77663_regulator *reg = rdev_get_drvdata(rdev);
+#if defined(CONFIG_MFD_MAX77663_LPM)
 	struct max77663_regulator_platform_data *pdata = _to_pdata(reg);
+#endif
 	u8 power_mode;
 	int ret;
 

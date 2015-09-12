@@ -419,8 +419,10 @@ static int lbee9qmb_rfkill_suspend(struct platform_device *pdev,
 		pm_message_t state)
 {
 	struct bcm_bt_lpm *lpm = platform_get_drvdata(pdev);
+#ifdef CONFIG_BRCM_HOST_WAKE
 	int v;
 	int wake;
+#endif
 	int ret = 0;
 	dev_dbg(&pdev->dev, "****** %s\n", __func__);
 
@@ -462,7 +464,9 @@ failed:
 static int lbee9qmb_rfkill_resume(struct platform_device *pdev)
 {
 	struct bcm_bt_lpm *lpm = platform_get_drvdata(pdev);
+#ifdef CHECK_HOST_WAKE_ON_RESUME
 	unsigned long flags;
+#endif
 	dev_dbg(&pdev->dev, "****** %s\n", __func__);
 
 

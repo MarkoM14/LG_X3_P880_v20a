@@ -175,7 +175,7 @@ struct max8971_chip {
 };
 
 static struct max8971_chip	*max8971_chg;
-static struct work_struct max8971_wq;
+//static struct work_struct max8971_wq;
 
 //                                                                          
 //                    
@@ -647,27 +647,9 @@ static irqreturn_t max8971_charger_wq(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-//kkk_test
-/*
-                                                              
- 
-                           
-            
-                                                              
- 
-                                                            
-                                                                                                 
- 
-                                                    
-
-        
- 
-*/
-
 static void lge_charger_setting_work(struct work_struct *work)
 {
 	struct max8971_chip *chip;
-	u8 val = 0;
 	chip = container_of(work, struct max8971_chip, monitor_work);
 	
 	max8971_set_reg(chip, 1);
@@ -813,6 +795,8 @@ EXPORT_SYMBOL(max8971_is_charging_enable);
 
 static int max8971_enable_charging(struct max8971_chip *info, bool enable)
 {
+	u8 val[3];
+
 	if (info == NULL || info->pdata == NULL) {
 		if (info == NULL) {
 			printk("info is null..\n");
@@ -839,8 +823,6 @@ static int max8971_enable_charging(struct max8971_chip *info, bool enable)
 						pr_info("Cable type is POWER_SUPPLY_TYPE_USB(OTG)\n");
 						{
 							chg_flag_muic = 1;
-
-							u8 val[3];
 							val[0] = max8971_read_reg(info->client, MAX8971_REG_CHG_STAT);
 							val[1] = max8971_read_reg(info->client, MAX8971_REG_DETAILS1);
 							val[2] = max8971_read_reg(info->client, MAX8971_REG_DETAILS2);
@@ -987,7 +969,7 @@ static int max8971_charger_set_property(struct power_supply *psy,
 	}
 	return 0;
 }
-
+/*
 static irqreturn_t max8971_interrupt_handler(s32 irq, void *data)
 {
 	printk("max8971_interrupt_handler()\n");
@@ -995,7 +977,7 @@ static irqreturn_t max8971_interrupt_handler(s32 irq, void *data)
 	schedule_work(&max8971_wq);
 	return IRQ_HANDLED;
 }
-
+*/
 
 static enum power_supply_property max8971_charger_props[] = {
 	POWER_SUPPLY_PROP_ONLINE,
@@ -1145,13 +1127,6 @@ static __devinit int max8971_probe(struct i2c_client *client,
 
 err:
 	free_irq(client->irq, chip);
-
-err_irq_request:
-err_gpio_register_2:
-	gpio_free(client->irq);
-
-err_gpio_register_1:
-	power_supply_unregister(&chip->charger);
 
 err_power_supply_register:
 	i2c_set_clientdata(client, NULL);

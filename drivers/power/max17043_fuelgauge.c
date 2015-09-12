@@ -208,6 +208,7 @@ static int max17043_read_vcell(struct i2c_client *client)
 	dev_dbg(&client->dev, "MAX17043 vcell [%d]\n",chip->vcell);
 	return 0;
 }
+/*
 static int max17043_read_soc(struct i2c_client *client)
 {
 	struct max17043_chip *chip = i2c_get_clientdata(client);
@@ -221,7 +222,8 @@ static int max17043_read_soc(struct i2c_client *client)
 	dev_dbg(&client->dev, "MAX17043 soc [%d]\n",chip->soc);
 
 	return 0;
-}
+}*/
+
 static int max17043_read_version(struct i2c_client *client)
 {
 	struct max17043_chip *chip = i2c_get_clientdata(client);
@@ -332,7 +334,7 @@ static int max17043_need_quickstart(struct max17043_chip *chip, int charging)
 
 static int max17043_next_alert_level(int level)
 {
-	int next_level;
+	int next_level = 0;
 	printk(KERN_DEBUG " [MAX17043] SOC_level = %d\n",level);
 
 
@@ -513,9 +515,10 @@ static void max17043_work(struct work_struct *work)
 
 static void max17043_alert_work(struct work_struct *work)
 {
-	printk(KERN_INFO "[Max17043_Alert_Work_Start]\n");
 	struct max17043_chip *chip =
 		container_of(work, struct max17043_chip, alert_work);;
+
+	printk(KERN_INFO "[Max17043_Alert_Work_Start]\n");
 
 	if (chip->status == MAX17043_WORKING) {
 		cancel_delayed_work_sync(&chip->work);

@@ -137,9 +137,9 @@ static void lm3533_set_main_current_level(struct i2c_client *client, int level)
 {
 	struct lm3533_device *dev = i2c_get_clientdata(client);
 	int cal_value = 0;
-	int min_brightness = dev->min_brightness;
-	int max_brightness = dev->max_brightness;
-	int max_current = dev->max_current;
+//	int min_brightness = dev->min_brightness;
+//	int max_brightness = dev->max_brightness;
+//	int max_current = dev->max_current;
 	int gpio = dev->hwen_gpio;
 
 	pr_debug("lm3533_level[BL]:%d \n", level);
@@ -527,17 +527,17 @@ DEVICE_ATTR(lm3533_bl_hvled, 0660, lm3533_bl_show_hvled,
 		lm3533_bl_store_hvled);
 
 #ifdef CONFIG_LM3533_LEDS_CLASS
-
+/*
 static int lm3533_bl_get_intensity(struct lm3533_device *drvdata)
 {
 	return drvdata->saved_main_lcd_level;
-}
+}*/
 
 static void leds_brightness_set(struct led_classdev *led_cdev, enum led_brightness value)
 {
 	struct lm3533_device *drvdata = dev_get_drvdata(led_cdev->dev->parent);
-	int brightness;
-	int next;
+//	int brightness;
+//	int next;
 
 	if (!drvdata) {
 		printk("Error getting drvier data\n");

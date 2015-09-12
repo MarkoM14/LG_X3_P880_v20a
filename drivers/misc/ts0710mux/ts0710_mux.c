@@ -345,6 +345,9 @@ static int node_put_to_send(u8 dlci, u8 *data, int size)
     u8 priority;
     int frame_count = 0;
     int dont_wait = 0;
+#ifdef TS0710DEBUG
+    unsigned int smp_id = smp_processor_id();
+#endif
 
 	TS0710_DEBUG("start!");
 
@@ -354,9 +357,6 @@ static int node_put_to_send(u8 dlci, u8 *data, int size)
 		kfree(data);
 		return size;
 	}
-#endif
-#ifdef TS0710DEBUG
-    unsigned int smp_id = smp_processor_id();
 #endif
 
     dont_wait = (in_interrupt() || ((mux_filp[dlci] != NULL) && (mux_filp[dlci]->f_flags & O_NONBLOCK)));
@@ -804,7 +804,8 @@ void process_mcc(u8 * data, u32 len, ts0710_con * ts0710, int longpkt)
 		{
 			ts0710->dlci[j].state = CONNECTED;
 			up(&spi_write_data_sema[j]);
-				(void)down_trylock(&spi_write_data_sema[j]);
+				if (down_trylock(&spi_write_data_sema[j]))
+					TS0710_DEBUG("spi_write_data_sema cannot be acquired.\n");
 		}
      		ts0710_fcon_msg(ts0710, MCC_RSP);
      	}
@@ -851,7 +852,8 @@ void process_mcc(u8 * data, u32 len, ts0710_con * ts0710, int longpkt)
 				ts0710->dlci[dlci].state = CONNECTED;
 				TS0710_DEBUG ("MUX Received Flow on on dlci %d\n", dlci);
 				up(&spi_write_data_sema[dlci]);
-				(void)down_trylock(&spi_write_data_sema[dlci]);
+				if (down_trylock(&spi_write_data_sema[dlci]))
+					TS0710_DEBUG("spi_write_data_sema cannot be acquired.\n");
 			}
 
      			ts0710_msc_msg(ts0710, v24_sigs, MCC_RSP, dlci);
@@ -2232,15 +2234,15 @@ static void ts_ldisc_clear_nodes(void)
 
 static int ts_ldisc_tx_looper(void *param)
 {
-    int i,res;
-    u8  dlci;		
+    int i, res;
+    u8  dlci;
     u8 *data_ptr;
     int data_size;
     void * next_ptr;
     int is_frames = 0;
     short int retry_cnt = 0;
     short int retry_max = 0;
-//    unsigned int smp_id = smp_processor_id();
+
     TS0710_DEBUG(" start");
     
     set_freezable(); //20120312 - Nv_bug_946018 recommend code to fix schedule is
@@ -2345,9 +2347,9 @@ static int ts_ldisc_tx_looper(void *param)
         }
 
         try_to_freeze();
-        TS0710_DEBUG("spi_write_sema: down");
-        down_timeout(&spi_write_sema, TS0710MUX_TIME_OUT);
-        
+
+        if (!down_timeout(&spi_write_sema, TS0710MUX_TIME_OUT))
+                TS0710_DEBUG("spi_write_sema: down");  
     }
 
     while(!kthread_should_stop())
@@ -2355,7 +2357,7 @@ static int ts_ldisc_tx_looper(void *param)
         msleep(1);
     }
 
-	TS0710_DEBUG(" exit\n");
+    TS0710_DEBUG(" exit\n");
 
     return 0;
 }
@@ -2423,8 +2425,9 @@ static int ts_ldisc_open(struct tty_struct *tty)
     write_task = NULL;
     write_task = kthread_run(ts_ldisc_tx_looper,NULL,"%s","ts_ldisc_tx_looper");
 
-    if(write_task == NULL) {
+    if (write_task == NULL) {
         TS0710_PRINTK(" write_task is not started!!!\n");
+        return -EAGAIN;
     }
 #endif
     TS0710_PRINTK(" ts_ldisc_open executed\n");
@@ -2581,7 +2584,7 @@ static u8 iscmdtty_gen2[ 23 ] =
 static int __init mux_init(void)
 {
      u8 j;
-     int result;
+     int result, error;
 #ifdef CONFIG_LGE_KERNEL_MUX
      NR_MUXS = TS0710MAX_CHANNELS;
      iscmdtty = NULL;
@@ -2663,7 +2666,6 @@ static int __init mux_init(void)
   
 #ifdef LGE_ENABLE_RIL_RECOVERY_MODE
      /*input device*/
-     int error;
 
      recovery_dev = input_allocate_device();
      if (!recovery_dev) {

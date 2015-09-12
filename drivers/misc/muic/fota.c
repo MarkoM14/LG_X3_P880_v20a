@@ -123,12 +123,10 @@ void ifx_power_high(void)
 
 void ifx_reset_low(void)
 {
-	int status;
 	return;
 }
 void ifx_reset_high(void)
 {
-	int status;
 	return;
 }
 
@@ -257,8 +255,6 @@ static ssize_t fota_test_proc_read(struct file *filp, char *buf, size_t len, lof
 static ssize_t fota_test_proc_write(struct file *filp, const char *buf, size_t len, loff_t *off)
 {
     char messages[10];
-    u32 reg, val;
-    int err;
     char cmd;
 
     if (len > 10)

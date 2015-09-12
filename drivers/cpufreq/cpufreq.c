@@ -480,6 +480,18 @@ show_one(policy_max_freq, user_policy.max);
 
 static int __cpufreq_set_policy(struct cpufreq_policy *data,
 				struct cpufreq_policy *policy);
+static struct pm_qos_request core_req, cpu_freq_min_req,
+				cpu_freq_max_req;
+
+#ifdef CONFIG_TEGRA_AUTO_HOTPLUG
+static void set_all_online(void)
+{
+	unsigned int max_cpus = pm_qos_request(PM_QOS_MAX_ONLINE_CPUS) ? : 4;
+
+	pm_qos_update_request_timeout(&core_req, max_cpus, 1500000);
+	mdelay(80);
+}
+#endif
 
 /**
  * cpufreq_per_cpu_attr_write() / store_##file_name() - sysfs write access
@@ -1038,9 +1050,6 @@ no_policy:
 	return ret;
 }
 
-static struct pm_qos_request core_req, cpu_freq_min_req,
-		     cpu_freq_max_req;
-
 static ssize_t store(struct kobject *kobj, struct attribute *attr,
 		     const char *buf, size_t count)
 {
@@ -1050,8 +1059,7 @@ static ssize_t store(struct kobject *kobj, struct attribute *attr,
 	ssize_t ret = -EINVAL;
 
 #ifdef CONFIG_TEGRA_AUTO_HOTPLUG
-	pm_qos_update_request_timeout(&core_req, 4, 1000000);
-	mdelay(50);
+	set_all_online();
 #endif
 
 	freqobj = to_cpu_kobj(kobj);

@@ -297,10 +297,6 @@ static int mpu_sysfs_enable_gyro(
     if(mpu_sysfs_is_suspended(mldl_cfg,EXT_SLAVE_TYPE_GYROSCOPE) && 
         data->enabled_gyro_by_sysfs)
     {
-      unsigned char int_pin = 0;
-      
-      
-
       result = inv_serial_single_write(gyro_handle,0x68,MPUREG_INT_PIN_CFG, data->int_pin_cfg | BIT_BYPASS_EN);  
       
       if(data->gyro_pwr_mgnt[0] & 0x40) {
@@ -348,7 +344,6 @@ int mpu_get_accel_facing_up(long z_threshold)
 	struct mldl_cfg *mldl_cfg = &mpu->mldl_cfg;
   struct i2c_adapter *accel_adapter = mpu->adaptors[EXT_SLAVE_TYPE_ACCEL];
   
-  ssize_t content_size =0;
 	unsigned char acceldata[6] = {0};
 	int16_t accel_axis[3] = {0};
   int16_t oriented_accel[3] = {0};
@@ -447,7 +442,7 @@ mpu_sysfs_accel_raw_show(struct device *dev,
       
     }
     
-  	content_size = sprintf(buf, "%8ld, %8ld, %8ld \n",
+  	content_size = sprintf(buf, "%8d, %8d, %8d \n",
   	                        oriented_accel[0], oriented_accel[1], oriented_accel[2]);
   }
 
@@ -671,7 +666,7 @@ static int mpu_pm_notifier_callback(struct notifier_block *nb,
 	struct timeval event_time;
 	dev_dbg(&client->adapter->dev, "%s: %ld\n", __func__, event);
 
-	printk("%s start [%d]\n", __func__, event);  //for debug
+	printk("%s start [%ld]\n", __func__, event);  //for debug
 
 	/* Prevent the file handle from being closed before we initialize
 	   the completion event */
@@ -1151,7 +1146,7 @@ static long mpu_dev_ioctl(struct file *file,
 	struct ext_slave_platform_data **pdata_slave = mldl_cfg->pdata_slave;
 	int ii;
 
-	if(mpu_is_shutdown == 1) return;
+	if(mpu_is_shutdown == 1) return retval;
 
 	for (ii = 0; ii < EXT_SLAVE_NUM_TYPES; ii++) {
 		if (!pdata_slave[ii])
