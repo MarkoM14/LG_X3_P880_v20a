@@ -110,10 +110,7 @@
 
 #define TS0710MUX_MINOR_START 0
 
-
-
-
-#define TS0710MUX_TIME_OUT 250	/* 2500ms, for BP UART hardware flow control AP UART  */
+#define TS0710MUX_TIME_OUT HZ*3 	/* 2500ms, for BP UART hardware flow control AP UART  */
 
 #define TS0710MUX_IO_DLCI_FC_ON 0x54F2
 #define TS0710MUX_IO_DLCI_FC_OFF 0x54F3

@@ -805,7 +805,7 @@ void process_mcc(u8 * data, u32 len, ts0710_con * ts0710, int longpkt)
 			ts0710->dlci[j].state = CONNECTED;
 			up(&spi_write_data_sema[j]);
 				if (down_trylock(&spi_write_data_sema[j]))
-					TS0710_DEBUG("spi_write_data_sema cannot be acquired.\n");
+					TS0710_PRINTK("spi_write_data_sema cannot be acquired.\n");
 		}
      		ts0710_fcon_msg(ts0710, MCC_RSP);
      	}
@@ -853,7 +853,7 @@ void process_mcc(u8 * data, u32 len, ts0710_con * ts0710, int longpkt)
 				TS0710_DEBUG ("MUX Received Flow on on dlci %d\n", dlci);
 				up(&spi_write_data_sema[dlci]);
 				if (down_trylock(&spi_write_data_sema[dlci]))
-					TS0710_DEBUG("spi_write_data_sema cannot be acquired.\n");
+					TS0710_PRINTK("spi_write_data_sema cannot be acquired.\n");
 			}
 
      			ts0710_msc_msg(ts0710, v24_sigs, MCC_RSP, dlci);
@@ -2346,10 +2346,11 @@ static int ts_ldisc_tx_looper(void *param)
             up(&spi_write_sema);
         }
 
-        try_to_freeze();
-
-        if (!down_timeout(&spi_write_sema, TS0710MUX_TIME_OUT))
-                TS0710_DEBUG("spi_write_sema: down");  
+        if (!is_frames)
+            try_to_freeze();
+        
+        if (!down_timeout(&spi_write_sema, (TS0710MUX_TIME_OUT + HZ)))
+            TS0710_DEBUG("spi_write_sema: down");
     }
 
     while(!kthread_should_stop())
@@ -2448,9 +2449,9 @@ static void ts_ldisc_close(struct tty_struct *tty)
         ts_ldisc_close_is_called = 1; //true
 #endif
     	up(&spi_write_sema); // if write semaphore holds on the thread, release it [START]
-    	TS0710_DEBUG("spi_write_sema(up) is release!!!");
+	TS0710_DEBUG("spi_write_sema(up) is release!!!");
     	kthread_stop(write_task);
-        TS0710_DEBUG("write thread is stopped");    
+        TS0710_DEBUG("write thread is stopped");
     }
 	
 //20110517 ws.yang@lge.com ..add to ril recovery [S]
