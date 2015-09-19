@@ -559,6 +559,7 @@ static void heap_page_cache_maint(
 	}
 }
 
+#if defined(CONFIG_NVMAP_CACHE_MAINT_BY_SET_WAYS)
 #if defined(CONFIG_NVMAP_OUTER_CACHE_MAINT_BY_SET_WAYS)
 static bool fast_cache_maint_outer(unsigned long start,
 		unsigned long end, unsigned int op)
@@ -583,6 +584,7 @@ static inline bool fast_cache_maint_outer(unsigned long start,
 {
 	return false;
 }
+#endif
 #endif
 
 #if defined(CONFIG_NVMAP_CACHE_MAINT_BY_SET_WAYS)
@@ -816,7 +818,9 @@ void nvmap_cache_maint_ops_flush(struct nvmap_device *dev,
 
 	size_t flush_size_outer_inner = 0;
 	size_t flush_size_inner	= 0;
+#ifdef CONFIG_NVMAP_CACHE_MAINT_BY_SET_WAYS
 	bool allow_outer_flush_by_ways;
+#endif
 
 	struct list_head flushed_ops;
 
