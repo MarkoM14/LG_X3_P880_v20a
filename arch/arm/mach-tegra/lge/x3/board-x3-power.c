@@ -1074,7 +1074,7 @@ static struct tegra_suspend_platform_data x3_suspend_data = {
 //                                  
 //        .cpu_wake_freq = CPU_WAKE_FREQ_LOW,
         .cpu_lp2_min_residency = 20000,
-	.cpu_resume_boost = 1000000,  /* CPU frequency resume boost in kHz */
+	.cpu_resume_boost = 1300000,  /* CPU frequency resume boost in kHz */
 };
 
 static void x3_init_deep_sleep_mode(void)
