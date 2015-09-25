@@ -2232,6 +2232,14 @@ static void ts_ldisc_clear_nodes(void)
     spin_unlock_irqrestore(&frame_nodes_lock, lock_flag);
 }
 
+/*There is no need to wait forever for sema down
+ *Add a timeout module for testing
+ */
+unsigned long looper_timeout = 10;  // 100ms
+module_param(looper_timeout, ulong, 0664);
+MODULE_PARM_DESC(looper_timeout,
+        "ts0710 mux - tx_looper semaphore down timeout");
+
 static int ts_ldisc_tx_looper(void *param)
 {
     int i, res;
@@ -2346,10 +2354,9 @@ static int ts_ldisc_tx_looper(void *param)
             up(&spi_write_sema);
         }
 
-        if (!is_frames)
-            try_to_freeze();
+        try_to_freeze();
         
-        if (!down_timeout(&spi_write_sema, (TS0710MUX_TIME_OUT + HZ)))
+        if (!down_timeout(&spi_write_sema, looper_timeout))
             TS0710_DEBUG("spi_write_sema: down");
     }
 
