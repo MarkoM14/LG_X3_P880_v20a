@@ -110,6 +110,12 @@ void tegra_mc_timing_restore(void)
 
 	writel(0x1, (u32)mc + MC_TIMING_CONTROL);
 	off = readl((u32)mc + MC_TIMING_CONTROL);
+#if defined(CONFIG_ARCH_TEGRA_3x_SOC)
+	/* Bug 1059264
+	 * Set extra snap level to avoid VI starving and dropping data.
+	 */
+	writel(1, mc + MC_VE_EXTRA_SNAP_LEVELS);
+#endif
 }
 #else
 #define tegra_mc_timing_save()
@@ -277,6 +283,12 @@ int __init tegra_mc_init(void)
 		writel(reg, mc + MC_INT_MASK);
 	}
 	tegra_mc_timing_save();
+#if defined(CONFIG_ARCH_TEGRA_3x_SOC)
+	/* Bug 1059264
+	 * Set extra snap level to avoid VI starving and dropping data.
+	 */
+	writel(1, mc + MC_VE_EXTRA_SNAP_LEVELS);
+#endif
 
 	return ret;
 }
