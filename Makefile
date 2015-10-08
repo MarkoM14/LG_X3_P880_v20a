@@ -363,16 +363,17 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 #Optimization flags for LGE X3
 ifdef CONFIG_MACH_X3
 #cortex-a9 flags
-OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad --param l1-cache-line-size=32 \
-		 --param l1-cache-size=32 --param l2-cache-size=1024 -mfloat-abi=softfp
+OPTIMIZATION_FLAGS = -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon-fp16 \
+		 -mfp16-format=alternative -mfloat-abi=softfp -mvectorize-with-neon-quad \
+		 --param l1-cache-line-size=32 --param l1-cache-size=32 --param l2-cache-size=1024
 ifdef CONFIG_CC_OPTIMIZE_MORE
 OPTIMIZATION_FLAGS += -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		-fgcse-sm -fgcse-las -fsection-anchors -fivopts \
 		-funsafe-loop-optimizations -ftree-loop-im -ftree-loop-ivcanon \
 		-funswitch-loops -frename-registers -ftracer -fforce-addr \
 		-fsched-spec-load -fweb -munaligned-access -fpredictive-commoning \
-		-fsingle-precision-constant -fno-tree-vectorize -fno-inline-functions
+		-fsingle-precision-constant -fno-tree-vectorize -fno-inline-functions \
+		-funsafe-math-optimizations
 endif
 endif
 MODULEFLAGS	= -DMODULE $(OPTIMIZATION_FLAGS)
@@ -599,9 +600,9 @@ endif # $(dot-config)
 all: vmlinux
 
 ifdef CONFIG_MACH_X3
-KBUILD_CFLAGS	+= -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon \
-		 -mvectorize-with-neon-quad --param l1-cache-line-size=32 \
-		 --param l1-cache-size=32 --param l2-cache-size=1024 -mfloat-abi=softfp
+KBUILD_CFLAGS	+= -march=armv7-a -mcpu=cortex-a9 -mtune=cortex-a9 -marm -mfpu=neon-fp16 \
+		 -mfp16-format=alternative -mfloat-abi=softfp -mvectorize-with-neon-quad \
+		 --param l1-cache-line-size=32 --param l1-cache-size=32 --param l2-cache-size=1024
 endif
 ifndef CONFIG_CC_OPTIMIZE_MORE
   ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
@@ -615,7 +616,8 @@ KBUILD_CFLAGS	+= -O3 -DNDEBUG -fmodulo-sched -fmodulo-sched-allow-regmoves \
 		-funsafe-loop-optimizations -ftree-loop-im -ftree-loop-ivcanon \
 		-funswitch-loops -frename-registers -ftracer -fforce-addr \
 		-fsched-spec-load -fweb -munaligned-access -fpredictive-commoning \
-		-fsingle-precision-constant -fno-tree-vectorize -fno-inline-functions
+		-fsingle-precision-constant -fno-tree-vectorize -fno-inline-functions \
+		-funsafe-math-optimizations
 LDFLAGS 	+= -O3 --sort-common
 endif
 
