@@ -555,6 +555,7 @@ static struct tegra_dc_out x3_disp1_out = {
 	.type		= TEGRA_DC_OUT_RGB,
 	.parent_clk 	= "pll_p",//"pll_d_out0",
 	//.depth		= 24,
+	.dither		= TEGRA_DC_ERRDIFF_DITHER, //error-diffusion dither
 
 	.modes	 	= x3_panel_modes,
 	.n_modes 	= ARRAY_SIZE(x3_panel_modes),
@@ -570,10 +571,12 @@ static struct tegra_dc_out x3_disp1_out = {
 };
 
 static struct tegra_dc_platform_data x3_disp1_pdata = {
-	.flags		= TEGRA_DC_FLAG_ENABLED,
-	.default_out	= &x3_disp1_out,
-	.emc_clk_rate	= 300000000,
-	.fb		= &x3_fb_data,
+	.flags			= TEGRA_DC_FLAG_ENABLED,
+	.default_out		= &x3_disp1_out,
+	.emc_clk_rate		= 204000000,
+// org	.emc_clk_rate		= 300000000,
+	.min_emc_clk_rate	= 102000000,
+	.fb			= &x3_fb_data,
 };
 static struct nvhost_device x3_disp1_device = {
 	.name		= "tegradc",
