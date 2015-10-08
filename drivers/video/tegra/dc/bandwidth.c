@@ -246,7 +246,10 @@ void tegra_dc_clear_bandwidth(struct tegra_dc *dc)
 void tegra_dc_program_bandwidth(struct tegra_dc *dc, bool use_new)
 {
 	unsigned i;
-//                                                                              
+
+	if (!dc->enabled)
+		return;
+
 //	int temp_emc_clk;
 
 	if (use_new || dc->emc_clk_rate != dc->new_emc_clk_rate) {
