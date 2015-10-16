@@ -2568,14 +2568,14 @@ static int binder_ioctl_write_read(struct file *filp,
 		goto out;
 	}
 	binder_debug(BINDER_DEBUG_READ_WRITE,
-		     "%d:%d write %lld at %016llx, read %lld at %016llx\n",
+		     "%d:%d write %zd at %016lx, read %zd at %016lx\n",
 		     proc->pid, thread->pid,
-		     (u64)bwr.write_size, (u64)bwr.write_buffer,
-		     (u64)bwr.read_size, (u64)bwr.read_buffer);
+		     bwr.write_size, bwr.write_buffer,
+		     bwr.read_size, bwr.read_buffer);
 
 	if (bwr.write_size > 0) {
 		ret = binder_thread_write(proc, thread,
-					  bwr.write_buffer,
+					  (void __user *)bwr.write_buffer,
 					  bwr.write_size,
 					  &bwr.write_consumed);
 		trace_binder_write_done(ret);
@@ -2587,7 +2587,7 @@ static int binder_ioctl_write_read(struct file *filp,
 		}
 	}
 	if (bwr.read_size > 0) {
-		ret = binder_thread_read(proc, thread, bwr.read_buffer,
+		ret = binder_thread_read(proc, thread, (void __user *)bwr.read_buffer,
 					 bwr.read_size,
 					 &bwr.read_consumed,
 					 filp->f_flags & O_NONBLOCK);
@@ -2601,10 +2601,10 @@ static int binder_ioctl_write_read(struct file *filp,
 		}
 	}
 	binder_debug(BINDER_DEBUG_READ_WRITE,
-		     "%d:%d wrote %lld of %lld, read return %lld of %lld\n",
+		     "%d:%d wrote %zd of %zd, read return %zd of %zd\n",
 		     proc->pid, thread->pid,
-		     (u64)bwr.write_consumed, (u64)bwr.write_size,
-		     (u64)bwr.read_consumed, (u64)bwr.read_size);
+		     bwr.write_consumed, bwr.write_size,
+		     bwr.read_consumed, bwr.read_size);
 	if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
 		ret = -EFAULT;
 		goto out;
