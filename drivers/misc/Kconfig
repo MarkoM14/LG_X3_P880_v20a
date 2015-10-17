@@ -592,9 +592,10 @@ source "drivers/misc/cb710/Kconfig"
 source "drivers/misc/iwmc3200top/Kconfig"
 source "drivers/misc/ti-st/Kconfig"
 source "drivers/misc/lis3lv02d/Kconfig"
-# LGE_CHANGE_S [suchul.lee] 2011-07-03
+# LGE
 source "drivers/misc/ts0710mux/Kconfig"
-# LGE_CHANGE_E [suchul.lee] 2011-07-03
+source "drivers/misc/mtc_eta/Kconfig"
+# LGE END
 source "drivers/misc/carma/Kconfig"
 source "drivers/misc/inv_mpu/Kconfig"
 source "drivers/misc/tegra-baseband/Kconfig"
