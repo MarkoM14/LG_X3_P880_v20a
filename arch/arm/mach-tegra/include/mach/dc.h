@@ -627,12 +627,9 @@ void tegra_dc_set_out_pin_polars(struct tegra_dc *dc,
 #define GAMMA_NV_ERROR 0
 #define GAMMA_NV_ENABLED 1
 #define GAMMA_NV_DISABLED 2
-#define GAMMA_NV_ENABLED_SEND 3
-#define GAMMA_NV_SAVED_SEND 4
-#define GAMMA_NV_SEND 5
-#define GAMMA_NV_SAVED 6
-#define GAMMA_NV_RETURNED 7
-#define GAMMA_NV_LUT 8
+#define GAMMA_NV_SAVED 3
+#define GAMMA_NV_RETURNED 4
+#define GAMMA_NV_LUT 5
 int dc_set_gamma_rgb(int window_n, int red,int green,int blue);
 void dc_set_gamma_lut(void);
 struct lcd_gamma_rgb {

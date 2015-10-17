@@ -94,7 +94,6 @@ static int ssd2825_bridge_spi_read2(u8 value);
 static int ssd2825_HM_mode = FALSE;
 
 /*                                 */
-extern int dc_set_gamma_rgb(int window_n, int red,int green,int blue);
 struct lcd_gamma_rgb cmdlineRGBvalue;
 static int __init dc_get_gamma_cmdline(char *str)
 {
@@ -839,7 +838,7 @@ static ssize_t ssd2825_bridge_reg_read2(struct device *dev, struct device_attrib
 	return count;
 }
 
-static int red = 255,green = 255,blue = 255;
+static int red = 255, green = 255, blue = 255;
 static ssize_t display_gamma_tuning_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -851,35 +850,33 @@ static ssize_t display_gamma_tuning_store(struct device *dev,
 		const char *buf, size_t size)
 {
 	sscanf(buf, "%d,%d,%d",&red,&green,&blue);
-	printk("RED:%d GREEN:%d BLUE:%d\n",red,green,blue);
-	dc_set_gamma_rgb(0,red,green,blue);
-	if(cmdlineRGBvalue.table_type==GAMMA_NV_ENABLED){
-		cmdlineRGBvalue.table_type=GAMMA_NV_ENABLED_SEND;
-	}
-	else if(cmdlineRGBvalue.table_type==GAMMA_NV_SAVED){
-		cmdlineRGBvalue.table_type=GAMMA_NV_SAVED_SEND;
-	}
-	else{
-		cmdlineRGBvalue.table_type=GAMMA_NV_SEND;
-	}
 
-	return size;
-}
+	if (red < 0 || red > 255)
+		return EINVAL;
+	if (green < 0 || green > 255)
+		return EINVAL;
+	if (blue < 0 || blue > 255)
+		return EINVAL;
 
-static ssize_t display_gamma_saved_store(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t size)
-{
-	int red,green,blue;
-	sscanf(buf, "%d,%d,%d",&red,&green,&blue);
-	printk("RED:%d GREEN:%d BLUE:%d\n",red,green,blue);
-	dc_set_gamma_rgb(0,red,green,blue);
-	cmdlineRGBvalue.table_type=GAMMA_NV_SAVED;
 	cmdlineRGBvalue.red=red;
 	cmdlineRGBvalue.green=green;
 	cmdlineRGBvalue.blue=blue;
 
+	if (dc_set_gamma_rgb(0,red,green,blue)) {
+	      cmdlineRGBvalue.table_type=GAMMA_NV_SAVED;
+	      printk("RGB gamma_tuning -> RED:%d GREEN:%d BLUE:%d\n",red,green,blue);
+	} else
+	      cmdlineRGBvalue.table_type=GAMMA_NV_RETURNED;
+	
 	return size;
+}
+
+static void ssd2825_bridge_rgb_update(void)
+{
+	if (dc_set_gamma_rgb(0,red,green,blue)) {
+	      cmdlineRGBvalue.table_type=GAMMA_NV_SAVED;
+	      printk("RGB update -> RED:%d GREEN:%d BLUE:%d\n",red,green,blue);
+	}
 }
 
 // Scans for a single unsigned integer (at most 3 digits) followed by
@@ -977,7 +974,6 @@ static ssize_t display_gamma_lut_store(struct device *dev,
 }
 
 DEVICE_ATTR(gamma_tuning, 0660, display_gamma_tuning_show, display_gamma_tuning_store);
-DEVICE_ATTR(gamma_saved, 0660, NULL, display_gamma_saved_store);
 DEVICE_ATTR(gamma_lut, 0660, NULL, display_gamma_lut_store);
 DEVICE_ATTR(device_id, 0660, ssd2825_bridge_show_device_id, NULL);
 DEVICE_ATTR(mipi_lp, 0660, ssd2825_bridge_show_mipi_lp, NULL);
@@ -995,12 +991,7 @@ void ssd2825_bridge_spi_suspend(struct early_suspend * h)
 	cancel_delayed_work_sync(&work_instance->work_reg_check);
 #endif
 	ssd2825_bridge_disable();
-	if(cmdlineRGBvalue.table_type==GAMMA_NV_ENABLED_SEND)
-		cmdlineRGBvalue.table_type=GAMMA_NV_ENABLED;
-	else if(cmdlineRGBvalue.table_type==GAMMA_NV_SAVED_SEND)
-		cmdlineRGBvalue.table_type=GAMMA_NV_SAVED;
-	else if(cmdlineRGBvalue.table_type==GAMMA_NV_SEND)
-		cmdlineRGBvalue.table_type=GAMMA_NV_RETURNED;
+
 	DEBUG_MSG(KERN_INFO "%s end \n", __func__);
 	//return 0;
 }
@@ -1024,6 +1015,9 @@ void ssd2825_bridge_spi_resume(struct early_suspend * h)
 #ifdef CONFIG_ESD_REG_CHECK
 	schedule_delayed_work(&work_instance->work_reg_check, msecs_to_jiffies(100));
 #endif
+	if (cmdlineRGBvalue.table_type==GAMMA_NV_RETURNED)
+		ssd2825_bridge_rgb_update();
+
 	DEBUG_MSG(KERN_INFO "%s end \n", __func__);
 }
 
@@ -1194,7 +1188,6 @@ static int ssd2825_bridge_spi_probe(struct spi_device *spi)
 	err = device_create_file(&spi->dev, &dev_attr_reg_read);
 	err = device_create_file(&spi->dev, &dev_attr_reg_read2);
 	err = device_create_file(&spi->dev, &dev_attr_gamma_tuning);
-	err = device_create_file(&spi->dev, &dev_attr_gamma_saved);
 	err = device_create_file(&spi->dev, &dev_attr_gamma_lut);
 
 	bridge_spi = spi;
@@ -1232,7 +1225,6 @@ static int __devexit ssd2825_bridge_spi_remove(struct spi_device *spi)
 	device_remove_file(&spi->dev, &dev_attr_reg_read);
 	device_remove_file(&spi->dev, &dev_attr_reg_read2);
 	device_remove_file(&spi->dev, &dev_attr_gamma_tuning);
-	device_remove_file(&spi->dev, &dev_attr_gamma_saved);
 	device_remove_file(&spi->dev, &dev_attr_gamma_lut);
 	return 0;
 }

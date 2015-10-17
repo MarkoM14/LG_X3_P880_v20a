@@ -171,7 +171,7 @@ static u8 hitach_gammalut[256] = {
 #endif
 
 //
-extern bool x3_hddisplay_on;
+static bool dc_clk_enabled = false;
 int tegra_dc_update_windows(struct tegra_dc_win *windows[], int n);  
 struct tegra_dc *tegra_dc_gamma;
 //static void tegra_dc_set_lut(struct tegra_dc *dc, struct tegra_dc_win* win);
@@ -183,8 +183,8 @@ int dc_set_gamma_rgb(int window_n, int red,int green,int blue)
 	struct tegra_dc_win *dcwins[DC_N_WINDOWS];  
 
 	/*Only attempt to apply if the display is on, or a panic will happen.*/
-	if (x3_hddisplay_on) {
-		printk("%s start \n" ,__func__);
+	if (dc_clk_enabled) {
+//		printk("%s start \n" ,__func__);
 		for (i = 0; i < DC_N_WINDOWS; i++) {
 			win = &tegra_dc_gamma->windows[i];
 			tegra_dc_writel(tegra_dc_gamma, WINDOW_A_SELECT << i,
@@ -199,10 +199,11 @@ int dc_set_gamma_rgb(int window_n, int red,int green,int blue)
 			tegra_dc_set_lut(tegra_dc_gamma, win);
 			dcwins[i] = tegra_dc_get_window(tegra_dc_gamma, i);  
 		}
-		tegra_dc_update_windows(dcwins, DC_N_WINDOWS); 
-		printk("%s end \n" ,__func__);
+		tegra_dc_update_windows(dcwins, DC_N_WINDOWS);
+//		printk("%s end \n" ,__func__);
+		return 1;
 	} else
-		printk("%s: Tried to apply gamma_rgb settings when LCD was off\n",
+		printk("%s: Gamma_rgb settings ignored: Display is off\n",
 			__func__);
 	return 0;
 }
@@ -213,8 +214,8 @@ void dc_set_gamma_lut(void)
 	struct tegra_dc_win *dcwins[DC_N_WINDOWS];
 
 	/*Only attempt to apply if the display is on, or a panic will happen.*/
-	if (x3_hddisplay_on) {
-		printk("%s start \n" ,__func__);
+	if (dc_clk_enabled) {
+//		printk("%s start \n" ,__func__);
 		for (i = 0; i < DC_N_WINDOWS; i++) {
 			struct tegra_dc_win *win = &tegra_dc_gamma->windows[i];
 			tegra_dc_writel(tegra_dc_gamma, WINDOW_A_SELECT << i,
@@ -227,9 +228,9 @@ void dc_set_gamma_lut(void)
 		}
 
 		tegra_dc_update_windows(dcwins, DC_N_WINDOWS);
-		printk("%s end \n" ,__func__);
+//		printk("%s end \n" ,__func__);
 	} else
-		printk("%s: Tried to apply gamma_lut settings when LCD was off\n",
+		printk("%s: Gamma_rgb settings ignored: Display is off\n",
 			__func__);
 }
 #endif
@@ -250,6 +251,9 @@ void tegra_dc_clk_enable(struct tegra_dc *dc)
 	if (!tegra_is_clk_enabled(dc->clk)) {
 		clk_enable(dc->clk);
 		tegra_dvfs_set_rate(dc->clk, dc->mode.pclk);
+#if defined(CONFIG_MACH_LGE)
+		dc_clk_enabled = true;
+#endif
 	}
 }
 
@@ -258,6 +262,9 @@ void tegra_dc_clk_disable(struct tegra_dc *dc)
 	if (tegra_is_clk_enabled(dc->clk)) {
 		clk_disable(dc->clk);
 		tegra_dvfs_set_rate(dc->clk, 0);
+#if defined(CONFIG_MACH_LGE)
+		dc_clk_enabled = false;
+#endif
 	}
 }
 
@@ -1431,12 +1438,10 @@ static u32 get_syncpt(struct tegra_dc *dc, int idx)
 static int tegra_dc_init(struct tegra_dc *dc)
 {
 	int i;
-/*                                 */
 #if defined(CONFIG_MACH_LGE)
 	int j;
 	struct tegra_dc_lut *lut;
 #endif	
-/*                                 */
 	int int_enable;
 
 	tegra_dc_writel(dc, 0x00000100, DC_CMD_GENERAL_INCR_SYNCPT_CNTRL);
@@ -1505,16 +1510,6 @@ static int tegra_dc_init(struct tegra_dc *dc)
 				lut->g[j]=(u8)(((cmdlineRGBvalue.green&0x000000FF)*(u32)j)/255);
 				lut->b[j]=(u8)(((cmdlineRGBvalue.blue&0x000000FF)*(u32)j)/255);
 			}
-		}
-		else if(cmdlineRGBvalue.table_type==GAMMA_NV_DISABLED){
-			/*You have to consider AT%KCAL */
-			/*win->ppflags |= TEGRA_WIN_PPFLAG_CP_ENABLE;
-			lut = &dc->windows[i].lut;
-			for (j = 0; j < 256; j++) {
-				lut->r[j]=(u8)hitach_gammalut[j];
-				lut->g[j]=(u8)hitach_gammalut[j];
-				lut->b[j]=(u8)hitach_gammalut[j];
-			}*///LCD S-curve disable for side effect
 		}
 		else if(cmdlineRGBvalue.table_type==GAMMA_NV_SAVED){
 			win->ppflags |= TEGRA_WIN_PPFLAG_CP_ENABLE;
