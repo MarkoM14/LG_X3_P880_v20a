@@ -2235,7 +2235,7 @@ static void ts_ldisc_clear_nodes(void)
 /*There is no need to wait forever for sema down
  *Add a timeout module for testing
  */
-unsigned long looper_timeout = 250;  // 100ms
+unsigned long looper_timeout = 10;  // 100ms
 module_param(looper_timeout, ulong, 0664);
 MODULE_PARM_DESC(looper_timeout,
         "ts0710 mux - tx_looper semaphore down timeout");
