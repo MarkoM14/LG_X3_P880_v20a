@@ -163,9 +163,8 @@ static void hp_stats_update(unsigned int cpu, bool up)
 }
 
 #ifdef CONFIG_MACH_X3
-/* Use display state to try and save some power */
-extern bool x3_hddisplay_on;
-static unsigned int screen_off_freq;
+/* Use display state to try and save some power. From earlysuspend.c */
+extern bool wants_display_on;
 #endif
 
 /* must be called with tegra_cpu_lock held */
@@ -206,8 +205,7 @@ static void __update_target_cluster(unsigned int cpu_freq, bool suspend)
 		/* Switch to G cluster if suspend rate is high enough */
 		if (suspend && cpu_freq >= idle_bottom_freq
 #ifdef CONFIG_MACH_X3
-			 && (!screen_off_lp || x3_hddisplay_on ||
-					cpu_freq >= screen_off_freq)
+			 && (!screen_off_lp || wants_display_on)
 #endif
 								) {
 			cpq_target_cluster_state = TEGRA_CPQ_G;
@@ -218,9 +216,8 @@ static void __update_target_cluster(unsigned int cpu_freq, bool suspend)
 		if (is_lp_cluster()) {
 			if (cpu_freq >= idle_top_freq &&
 				cpq_target_cluster_state != TEGRA_CPQ_G
-#ifdef CONFIG_MACH_X3
-					&& (!screen_off_lp || x3_hddisplay_on ||
-							cpu_freq >= screen_off_freq)
+#if CONFIG_MACH_X3
+					&& (!screen_off_lp || wants_display_on)
 #endif
 									) {
 				/* Switch to G cluster after up_delay */
@@ -865,15 +862,8 @@ int __cpuinit tegra_auto_hotplug_init(struct mutex *cpulock)
 	init_timer(&updown_timer);
 	updown_timer.function = updown_handler;
 
-	idle_top_freq = ((clk_get_max_rate(cpu_lp_clk) / 1000) + 155000);    //475000
+	idle_top_freq = ((clk_get_max_rate(cpu_lp_clk) / 1000) + 55000);    //475000
 	idle_bottom_freq = ((clk_get_min_rate(cpu_g_clk) / 1000) + 104000);  //370000
-
-#ifdef CONFIG_MACH_X3
-	if (pdata && pdata->cpu_resume_boost)
-	      screen_off_freq = (pdata->cpu_resume_boost - 50000);
-	else
-	      screen_off_freq = (idle_top_freq + 270000);
-#endif
 
 	up_delay = msecs_to_jiffies(UP_DELAY_MS);
 	down_delay = msecs_to_jiffies(DOWN_DELAY_MS);
