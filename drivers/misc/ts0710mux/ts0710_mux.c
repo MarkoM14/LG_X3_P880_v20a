@@ -2354,7 +2354,8 @@ static int ts_ldisc_tx_looper(void *param)
             up(&spi_write_sema);
         }
 
-        try_to_freeze();
+        if (!is_frames)
+            try_to_freeze();
         
         if (!down_timeout(&spi_write_sema, looper_timeout))
             TS0710_DEBUG("spi_write_sema: down");
