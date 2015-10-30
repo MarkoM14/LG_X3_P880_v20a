@@ -782,7 +782,7 @@ int max8971_is_charging_enable(void)
 		(chg_dtls_val == MAX8971_CHG_DTLS_TEMP_SUSPEND) ||
 		(chg_dtls_val == MAX8971_CHG_DTLS_USB_SUSPEND) ||
 		(chg_dtls_val == MAX8971_CHG_DTLS_CHG_OFF)) {
-		printk("[CHG] %s() = 0 (chg_dtls_val = 0x%02X)\n", __func__, chg_dtls_val);
+//		printk("[CHG] %s() = 0 (chg_dtls_val = 0x%02X)\n", __func__, chg_dtls_val);
 		return 0;
 	}
 	else {

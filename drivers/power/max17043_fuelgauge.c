@@ -60,7 +60,7 @@
 #define MAX17043_TOLERANCE	20		// Tuning Value
 #define	BATT_VCELL_LOW		3400	// Low Battery Cut off soc
 
-#define __DEBUG_FUEL
+//#define __DEBUG_FUEL
 
 #ifdef __DEBUG_FUEL
 #define DFUEL(fmt, args...) printk("[FUEL] " fmt, ##args)
