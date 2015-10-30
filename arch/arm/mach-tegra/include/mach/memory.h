@@ -29,7 +29,8 @@
 #define PLAT_PHYS_OFFSET		UL(0x80000000)
 #endif
 
-#if defined(CONFIG_MACH_X3)
+#if 0
+// defined(CONFIG_MACH_X3)
 #define END_MEM			UL(0xBEA00000)
 #endif
 
