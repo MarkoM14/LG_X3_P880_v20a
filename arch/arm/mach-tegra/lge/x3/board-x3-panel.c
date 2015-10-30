@@ -575,7 +575,7 @@ static struct tegra_dc_platform_data x3_disp1_pdata = {
 	.default_out		= &x3_disp1_out,
 	.emc_clk_rate		= 204000000,
 // org	.emc_clk_rate		= 300000000,
-	.min_emc_clk_rate	= 102000000,
+	.min_emc_clk_rate	= 51000000, //102000000,
 	.fb			= &x3_fb_data,
 };
 static struct nvhost_device x3_disp1_device = {
