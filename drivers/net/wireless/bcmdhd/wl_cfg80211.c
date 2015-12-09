@@ -6885,14 +6885,14 @@ static s32 wl_setup_wiphy(struct wireless_dev *wdev, struct device *sdiofunc_dev
 	wdev->wiphy->flags |= WIPHY_FLAG_SUPPORTS_TDLS;
 #endif
 
-#if defined(CONFIG_PM)
+#if defined(CONFIG_PM) && defined(WL_CFG80211_P2P_DEV_IF)
 	/*
 	 * From linux-3.10 kernel, wowlan packet filter is mandated to avoid the
 	 * disconnection of connected network before suspend. So a dummy wowlan
 	 * filter is configured for kernels linux-3.8 and above.
 	 */
 	wdev->wiphy->wowlan.flags = WIPHY_WOWLAN_ANY;
-#endif /* CONFIG_PM //&& WL_CFG80211_P2P_DEV_IF */
+#endif /* CONFIG_PM && WL_CFG80211_P2P_DEV_IF */
 
 	WL_DBG(("Registering custom regulatory)\n"));
 	wdev->wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
