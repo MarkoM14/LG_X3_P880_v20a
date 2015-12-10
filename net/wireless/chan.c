@@ -121,7 +121,7 @@ int cfg80211_set_freq(struct cfg80211_registered_device *rdev,
 					chan, channel_type);
 	if (!err) {
 		rdev->monitor_channel = chan;
-		rdev->monitor_channel_type = chantype;
+		rdev->monitor_channel_type = channel_type;
 	} else
 		return err;
 
