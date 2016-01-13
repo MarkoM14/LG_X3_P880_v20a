@@ -3042,7 +3042,7 @@ int ioctl_has_perm(const struct cred *cred, struct file *file,
 	u8 driver = cmd >> 8;
 	u8 xperm = cmd & 0xff;
 
-	COMMON_AUDIT_DATA_INIT(&ad, IOCTL_OP);
+	ad.type = LSM_AUDIT_DATA_IOCTL_OP;
 	ad.u.op = &ioctl;
 	ad.u.op->cmd = cmd;
 	ad.selinux_audit_data = &sad;
