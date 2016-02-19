@@ -45,34 +45,18 @@ MODULE_LICENSE("GPL v2");
 //#define START_DELAY
 
 static struct pm_qos_request freq_req, core_req;
+static struct kernel_param_ops boost_freq_ops;
 static unsigned int boost_freq; /* kHz */
-static int boost_freq_set(const char *arg, const struct kernel_param *kp)
-{
-	unsigned int old_boost = boost_freq;
-	int ret = param_set_uint(arg, kp);
-	if (ret == 0 && old_boost && !boost_freq)
-		pm_qos_update_request(&freq_req,
-				      PM_QOS_DEFAULT_VALUE);
-	return ret;
-}
-static int boost_freq_get(char *buffer, const struct kernel_param *kp)
-{
-	return param_get_uint(buffer, kp);
-}
-static struct kernel_param_ops boost_freq_ops = {
-	.set = boost_freq_set,
-	.get = boost_freq_get,
-};
+static unsigned long last_boost_jiffies;
+#ifdef START_DELAY
+static unsigned int start_delay = 0;
+#endif
+
 module_param_cb(boost_freq, &boost_freq_ops, &boost_freq, 0644);
 static unsigned long boost_time = 400; /* ms */
 module_param(boost_time, ulong, 0644);
 static unsigned long boost_cpus;
 module_param(boost_cpus, ulong, 0644);
-
-static unsigned long last_boost_jiffies;
-#ifdef START_DELAY
-static unsigned int start_delay = 0;
-#endif
 
 static void cfb_boost(struct kthread_work *w)
 {
@@ -88,6 +72,29 @@ static void cfb_boost(struct kthread_work *w)
 static struct task_struct *boost_kthread;
 static DEFINE_KTHREAD_WORKER(boost_worker);
 static DEFINE_KTHREAD_WORK(boost_work, &cfb_boost);
+
+static int boost_freq_set(const char *arg, const struct kernel_param *kp)
+{
+	unsigned int old_boost = boost_freq;
+	int ret = param_set_uint(arg, kp);
+	if (ret == 0 && old_boost && !boost_freq)
+		pm_qos_update_request(&freq_req,
+				      PM_QOS_DEFAULT_VALUE);
+
+	//Apply the boost
+	queue_kthread_work(&boost_worker, &boost_work);
+	last_boost_jiffies = jiffies;
+
+	return ret;
+}
+static int boost_freq_get(char *buffer, const struct kernel_param *kp)
+{
+	return param_get_uint(buffer, kp);
+}
+static struct kernel_param_ops boost_freq_ops = {
+	.set = boost_freq_set,
+	.get = boost_freq_get,
+};
 
 static void cfb_input_event(struct input_handle *handle, unsigned int type,
 			    unsigned int code, int value)
