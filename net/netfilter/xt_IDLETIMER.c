@@ -202,7 +202,7 @@ static ssize_t idletimer_tg_show(struct kobject *kobj, struct attribute *attr,
 		return sprintf(buf, "%u\n",
 			       jiffies_to_msecs(expires - now) / 1000);
 
-	if (timer->send_nl_msg)
+	if (timer && timer->send_nl_msg)
 		return sprintf(buf, "0 %d\n",
 			jiffies_to_msecs(now - expires) / 1000);
 	else
@@ -282,14 +282,12 @@ static int idletimer_tg_create(struct idletimer_tg_info *info)
 
 	info->timer = kmalloc(sizeof(*info->timer), GFP_KERNEL);
 	if (!info->timer) {
-		pr_debug("couldn't alloc timer\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	info->timer->attr.attr.name = kstrdup(info->label, GFP_KERNEL);
 	if (!info->timer->attr.attr.name) {
-		pr_debug("couldn't alloc attribute name\n");
 		ret = -ENOMEM;
 		goto out_free_timer;
 	}
