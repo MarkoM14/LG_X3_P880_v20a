@@ -28,7 +28,6 @@
 #include <asm/uaccess.h>
 
 #include <linux/power/lge_battery.h>
-#include "../staging/android/android_alarm.h"
 #include "../../arch/arm/mach-tegra/board.h"
 
 //                                                               
